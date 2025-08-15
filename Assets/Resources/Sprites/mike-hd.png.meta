@@ -1,0 +1,1040 @@
+fileFormatVersion: 2
+guid: 2c4b1f98c83ea8140827dcd4b4d85d32
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -8478424263812463274
+    second: mike-hd_0
+  - first:
+      213: 1995783665511586035
+    second: mike-hd_1
+  - first:
+      213: -8262728206266117213
+    second: mike-hd_2
+  - first:
+      213: 7252168681681461171
+    second: mike-hd_3
+  - first:
+      213: 6362831654919494143
+    second: mike-hd_4
+  - first:
+      213: -6589347108466512584
+    second: mike-hd_5
+  - first:
+      213: 8013092742127008114
+    second: mike-hd_6
+  - first:
+      213: -6266776028266222263
+    second: mike-hd_7
+  - first:
+      213: 7947428786001820446
+    second: mike-hd_8
+  - first:
+      213: -7725332677223799208
+    second: mike-hd_9
+  - first:
+      213: -6144314962015969876
+    second: mike-hd_10
+  - first:
+      213: -3370559312079673088
+    second: mike-hd_11
+  - first:
+      213: 374087185860396070
+    second: mike-hd_12
+  - first:
+      213: 4456950097789421675
+    second: mike-hd_13
+  - first:
+      213: -6797498609992316712
+    second: mike-hd_14
+  - first:
+      213: 3140256651643223772
+    second: mike-hd_15
+  - first:
+      213: -9105720110738311885
+    second: mike-hd_16
+  - first:
+      213: -6202643613073009355
+    second: mike-hd_17
+  - first:
+      213: 3531441846300869222
+    second: mike-hd_18
+  - first:
+      213: -7368482702839505482
+    second: mike-hd_19
+  - first:
+      213: 1043304353672740689
+    second: mike-hd_20
+  - first:
+      213: 8554475145529755484
+    second: mike-hd_21
+  - first:
+      213: -5660904916328600799
+    second: mike-hd_22
+  - first:
+      213: -5713000783891113663
+    second: mike-hd_23
+  - first:
+      213: 7850291898561726700
+    second: mike-hd_24
+  - first:
+      213: 2086069041283406410
+    second: mike-hd_25
+  - first:
+      213: -1527272893622864766
+    second: mike-hd_26
+  - first:
+      213: 9020655325775054607
+    second: mike-hd_27
+  - first:
+      213: -3070551647032972589
+    second: mike-hd_28
+  - first:
+      213: -5318407290672908043
+    second: mike-hd_29
+  - first:
+      213: 2331818697212786949
+    second: mike-hd_30
+  - first:
+      213: -9069229047151989093
+    second: mike-hd_31
+  - first:
+      213: 4080283850958898501
+    second: mike-hd_32
+  - first:
+      213: 7972894776727104291
+    second: mike-hd_33
+  - first:
+      213: 4001653131343266484
+    second: mike-hd_34
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: mike-hd_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 422
+        width: 77
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 655c76c7d06965a80800000000000000
+      internalID: -8478424263812463274
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_1
+      rect:
+        serializedVersion: 2
+        x: 82
+        y: 423
+        width: 78
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f8585f6ba272bb10800000000000000
+      internalID: 1995783665511586035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_2
+      rect:
+        serializedVersion: 2
+        x: 164
+        y: 423
+        width: 77
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a358e56974e45d80800000000000000
+      internalID: -8262728206266117213
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_3
+      rect:
+        serializedVersion: 2
+        x: 244
+        y: 423
+        width: 77
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3bf16da0ef0e4a460800000000000000
+      internalID: 7252168681681461171
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_4
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 423
+        width: 77
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ff9561dada15d4850800000000000000
+      internalID: 6362831654919494143
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_5
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 347
+        width: 75
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83d2b1a77bfed84a0800000000000000
+      internalID: -6589347108466512584
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_6
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 349
+        width: 76
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 279bdbec469343f60800000000000000
+      internalID: 8013092742127008114
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_7
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 349
+        width: 75
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 94d2244b760f709a0800000000000000
+      internalID: -6266776028266222263
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_8
+      rect:
+        serializedVersion: 2
+        x: 238
+        y: 349
+        width: 75
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1b3a53af50fa4e60800000000000000
+      internalID: 7947428786001820446
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_9
+      rect:
+        serializedVersion: 2
+        x: 317
+        y: 349
+        width: 75
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 856ab525cda1ac490800000000000000
+      internalID: -7725332677223799208
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_10
+      rect:
+        serializedVersion: 2
+        x: 395
+        y: 349
+        width: 75
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cad9be498120bbaa0800000000000000
+      internalID: -6144314962015969876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_11
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 272
+        width: 75
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0092b15e92e5931d0800000000000000
+      internalID: -3370559312079673088
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_12
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 275
+        width: 75
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6240c344056013500800000000000000
+      internalID: 374087185860396070
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_13
+      rect:
+        serializedVersion: 2
+        x: 158
+        y: 276
+        width: 75
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b68816000844add30800000000000000
+      internalID: 4456950097789421675
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_14
+      rect:
+        serializedVersion: 2
+        x: 236
+        y: 278
+        width: 77
+        height: 66
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d84236670f6aa1a0800000000000000
+      internalID: -6797498609992316712
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_15
+      rect:
+        serializedVersion: 2
+        x: 317
+        y: 277
+        width: 76
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cde70c079ce649b20800000000000000
+      internalID: 3140256651643223772
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_16
+      rect:
+        serializedVersion: 2
+        x: 396
+        y: 277
+        width: 75
+        height: 67
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 335ff4fadcbf1a180800000000000000
+      internalID: -9105720110738311885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_17
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 198
+        width: 71
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53510763f78cbe9a0800000000000000
+      internalID: -6202643613073009355
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_18
+      rect:
+        serializedVersion: 2
+        x: 68
+        y: 207
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 66286b916a3320130800000000000000
+      internalID: 3531441846300869222
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_19
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 203
+        width: 72
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6bd14ab8504edb990800000000000000
+      internalID: -7368482702839505482
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_20
+      rect:
+        serializedVersion: 2
+        x: 158
+        y: 207
+        width: 75
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15f384138cf8a7e00800000000000000
+      internalID: 1043304353672740689
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_21
+      rect:
+        serializedVersion: 2
+        x: 236
+        y: 207
+        width: 75
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c57853142d997b670800000000000000
+      internalID: 8554475145529755484
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_22
+      rect:
+        serializedVersion: 2
+        x: 315
+        y: 209
+        width: 76
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12ba8faa8fc6071b0800000000000000
+      internalID: -5660904916328600799
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_23
+      rect:
+        serializedVersion: 2
+        x: 393
+        y: 208
+        width: 70
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14954aa4e0857b0b0800000000000000
+      internalID: -5713000783891113663
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_24
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 125
+        width: 75
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce806ec93e6d1fc60800000000000000
+      internalID: 7850291898561726700
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_25
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 131
+        width: 75
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a4a13a69db433fc10800000000000000
+      internalID: 2086069041283406410
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_26
+      rect:
+        serializedVersion: 2
+        x: 158
+        y: 139
+        width: 75
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 284b68425690ecae0800000000000000
+      internalID: -1527272893622864766
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_27
+      rect:
+        serializedVersion: 2
+        x: 235
+        y: 130
+        width: 65
+        height: 75
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f07ce0ea93ecf2d70800000000000000
+      internalID: 9020655325775054607
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_28
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 137
+        width: 71
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3daeb16ab853365d0800000000000000
+      internalID: -3070551647032972589
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_29
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 53
+        width: 75
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f8f79c4fb83136b0800000000000000
+      internalID: -5318407290672908043
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_30
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 63
+        width: 73
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5097bf720c84c5020800000000000000
+      internalID: 2331818697212786949
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_31
+      rect:
+        serializedVersion: 2
+        x: 158
+        y: 69
+        width: 75
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9ee9d18b30a32280800000000000000
+      internalID: -9069229047151989093
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_32
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 61
+        width: 66
+        height: 72
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5450b2f4b8410a830800000000000000
+      internalID: 4080283850958898501
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_33
+      rect:
+        serializedVersion: 2
+        x: 373
+        y: 61
+        width: 66
+        height: 72
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 32be266ae8965ae60800000000000000
+      internalID: 7972894776727104291
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mike-hd_34
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 2
+        width: 75
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b28b00425ab88730800000000000000
+      internalID: 4001653131343266484
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      mike-hd_0: -8478424263812463274
+      mike-hd_1: 1995783665511586035
+      mike-hd_10: -6144314962015969876
+      mike-hd_11: -3370559312079673088
+      mike-hd_12: 374087185860396070
+      mike-hd_13: 4456950097789421675
+      mike-hd_14: -6797498609992316712
+      mike-hd_15: 3140256651643223772
+      mike-hd_16: -9105720110738311885
+      mike-hd_17: -6202643613073009355
+      mike-hd_18: 3531441846300869222
+      mike-hd_19: -7368482702839505482
+      mike-hd_2: -8262728206266117213
+      mike-hd_20: 1043304353672740689
+      mike-hd_21: 8554475145529755484
+      mike-hd_22: -5660904916328600799
+      mike-hd_23: -5713000783891113663
+      mike-hd_24: 7850291898561726700
+      mike-hd_25: 2086069041283406410
+      mike-hd_26: -1527272893622864766
+      mike-hd_27: 9020655325775054607
+      mike-hd_28: -3070551647032972589
+      mike-hd_29: -5318407290672908043
+      mike-hd_3: 7252168681681461171
+      mike-hd_30: 2331818697212786949
+      mike-hd_31: -9069229047151989093
+      mike-hd_32: 4080283850958898501
+      mike-hd_33: 7972894776727104291
+      mike-hd_34: 4001653131343266484
+      mike-hd_4: 6362831654919494143
+      mike-hd_5: -6589347108466512584
+      mike-hd_6: 8013092742127008114
+      mike-hd_7: -6266776028266222263
+      mike-hd_8: 7947428786001820446
+      mike-hd_9: -7725332677223799208
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

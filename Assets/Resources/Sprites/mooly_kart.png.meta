@@ -1,0 +1,546 @@
+fileFormatVersion: 2
+guid: e46f700514186a1418eebad7871d198c
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8835832943736661852
+    second: mooly_kart_0
+  - first:
+      213: -1940937634845400017
+    second: mooly_kart_1
+  - first:
+      213: -5479381769701277406
+    second: mooly_kart_2
+  - first:
+      213: 399515585818645272
+    second: mooly_kart_3
+  - first:
+      213: -2440298432307919606
+    second: mooly_kart_4
+  - first:
+      213: 4822350462713030543
+    second: mooly_kart_5
+  - first:
+      213: 3471779189336958235
+    second: mooly_kart_6
+  - first:
+      213: 4547289647099652630
+    second: mooly_kart_7
+  - first:
+      213: -1058092238685352229
+    second: mooly_kart_8
+  - first:
+      213: 1887832238786301159
+    second: mooly_kart_9
+  - first:
+      213: -628978902241400360
+    second: mooly_kart_10
+  - first:
+      213: -554222342797906844
+    second: mooly_kart_11
+  - first:
+      213: 4771533257895584566
+    second: mooly_kart_12
+  - first:
+      213: -6261538613647413873
+    second: mooly_kart_13
+  - first:
+      213: 8778085570974549746
+    second: mooly_kart_14
+  - first:
+      213: 7976830046534659015
+    second: mooly_kart_15
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: mooly_kart_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 169
+        width: 49
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c572e128f3f2f9a70800000000000000
+      internalID: 8835832943736661852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_1
+      rect:
+        serializedVersion: 2
+        x: 49
+        y: 169
+        width: 50
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f246adf21876015e0800000000000000
+      internalID: -1940937634845400017
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_2
+      rect:
+        serializedVersion: 2
+        x: 99
+        y: 170
+        width: 48
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 221443cbf4355f3b0800000000000000
+      internalID: -5479381769701277406
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_3
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 170
+        width: 49
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 813d3fefe4d5b8500800000000000000
+      internalID: 399515585818645272
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_4
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 111
+        width: 49
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a05085c4181522ed0800000000000000
+      internalID: -2440298432307919606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_5
+      rect:
+        serializedVersion: 2
+        x: 49
+        y: 114
+        width: 50
+        height: 55
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f876378223e6ce240800000000000000
+      internalID: 4822350462713030543
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_6
+      rect:
+        serializedVersion: 2
+        x: 49
+        y: 58
+        width: 50
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b15e50747cc3e2030800000000000000
+      internalID: 3471779189336958235
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_7
+      rect:
+        serializedVersion: 2
+        x: 98
+        y: 56
+        width: 49
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 61aaf2a67d73b1f30800000000000000
+      internalID: 4547289647099652630
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_8
+      rect:
+        serializedVersion: 2
+        x: 99
+        y: 113
+        width: 48
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bdecf8507b6e051f0800000000000000
+      internalID: -1058092238685352229
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_9
+      rect:
+        serializedVersion: 2
+        x: 146
+        y: 56
+        width: 48
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ec43644b6de23a10800000000000000
+      internalID: 1887832238786301159
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_10
+      rect:
+        serializedVersion: 2
+        x: 193
+        y: 56
+        width: 47
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d9afa8550b6547f0800000000000000
+      internalID: -628978902241400360
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_11
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 53
+        width: 49
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 46c22f237b10f48f0800000000000000
+      internalID: -554222342797906844
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_12
+      rect:
+        serializedVersion: 2
+        x: 49
+        y: 2
+        width: 49
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 63324d6a734e73240800000000000000
+      internalID: 4771533257895584566
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_13
+      rect:
+        serializedVersion: 2
+        x: 98
+        y: 0
+        width: 49
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f8d67225ecb8a19a0800000000000000
+      internalID: -6261538613647413873
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_14
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 0
+        width: 46
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f68be9815602d970800000000000000
+      internalID: 8778085570974549746
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: mooly_kart_15
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 47
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7cb6c5d0aa463be60800000000000000
+      internalID: 7976830046534659015
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      mooly_kart_0: 8835832943736661852
+      mooly_kart_1: -1940937634845400017
+      mooly_kart_10: -628978902241400360
+      mooly_kart_11: -554222342797906844
+      mooly_kart_12: 4771533257895584566
+      mooly_kart_13: -6261538613647413873
+      mooly_kart_14: 8778085570974549746
+      mooly_kart_15: 7976830046534659015
+      mooly_kart_2: -5479381769701277406
+      mooly_kart_3: 399515585818645272
+      mooly_kart_4: -2440298432307919606
+      mooly_kart_5: 4822350462713030543
+      mooly_kart_6: 3471779189336958235
+      mooly_kart_7: 4547289647099652630
+      mooly_kart_8: -1058092238685352229
+      mooly_kart_9: 1887832238786301159
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
