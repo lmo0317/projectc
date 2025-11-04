@@ -143,10 +143,10 @@ TextureImporter:
       name: farm_bkg1-hd_0
       rect:
         serializedVersion: 2
-        x: 106
-        y: 682
-        width: 656
-        height: 178
+        x: 0
+        y: 576
+        width: 1516
+        height: 412
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -162,198 +162,22 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: farm_bkg1-hd_1
-      rect:
-        serializedVersion: 2
-        x: 584
-        y: 763
-        width: 615
-        height: 158
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 860eedef0c24321f0800000000000000
-      internalID: -1070938889706872728
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: farm_bkg1-hd_2
-      rect:
-        serializedVersion: 2
-        x: 1138
-        y: 836
-        width: 378
-        height: 152
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 73337f5ea840cd050800000000000000
-      internalID: 5826537012520760119
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: farm_bkg1-hd_3
-      rect:
-        serializedVersion: 2
-        x: 1355
-        y: 817
-        width: 136
-        height: 30
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: d1fc9d00b25012f20800000000000000
-      internalID: 3396001276270071581
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: farm_bkg1-hd_4
-      rect:
-        serializedVersion: 2
-        x: 1307
-        y: 802
-        width: 98
-        height: 21
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 03eea018d460de4d0800000000000000
-      internalID: -3103817638241178064
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: farm_bkg1-hd_5
-      rect:
-        serializedVersion: 2
-        x: 1458
-        y: 803
-        width: 18
-        height: 12
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: b12c34f6e81cb25c0800000000000000
-      internalID: -4239081806742961637
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: farm_bkg1-hd_6
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 672
-        width: 232
-        height: 81
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 2a53110fcf8d584e0800000000000000
-      internalID: -1979937880288447070
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: farm_bkg1-hd_7
-      rect:
-        serializedVersion: 2
-        x: 266
-        y: 668
-        width: 181
-        height: 28
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 523835f9ce45e1230800000000000000
-      internalID: 3611417326459781925
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: farm_bkg1-hd_8
-      rect:
-        serializedVersion: 2
-        x: 305
-        y: 579
-        width: 1168
-        height: 190
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: f64724aa528a6d280800000000000000
-      internalID: -9018836324039101329
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
       name: farm_bkg1-hd_9
       rect:
         serializedVersion: 2
         x: 0
-        y: 1
-        width: 257
-        height: 574
+        y: 2
+        width: 256
+        height: 572
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 57d755ebfe4c3c540800000000000000
+      spriteID: 5aaf1412f1616e54586bd242ed367c32
       internalID: 5027078143045107061
       vertices: []
       indices: 
@@ -363,7 +187,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 90ecd69e2f95e064494055f9ce6b6b61
     internalID: 0
     vertices: []
     indices: 
@@ -371,17 +195,21 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":2.0},"gridSpriteSize":{"x":1516.0,"y":494.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
+      - key: SpriteEditor.SliceOnImport
+        value: False
     nameFileIdTable:
       farm_bkg1-hd_0: -7193577096297246935
-      farm_bkg1-hd_1: -1070938889706872728
-      farm_bkg1-hd_2: 5826537012520760119
-      farm_bkg1-hd_3: 3396001276270071581
-      farm_bkg1-hd_4: -3103817638241178064
-      farm_bkg1-hd_5: -4239081806742961637
-      farm_bkg1-hd_6: -1979937880288447070
-      farm_bkg1-hd_7: 3611417326459781925
-      farm_bkg1-hd_8: -9018836324039101329
+      farm_bkg1-hd_1: 32683399
+      farm_bkg1-hd_2: -74066499
+      farm_bkg1-hd_3: 1877957759
+      farm_bkg1-hd_4: -831623832
+      farm_bkg1-hd_5: -1064170594
+      farm_bkg1-hd_6: -456788476
+      farm_bkg1-hd_7: 1753026969
+      farm_bkg1-hd_8: 1066795600
       farm_bkg1-hd_9: 5027078143045107061
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
