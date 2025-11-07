@@ -7,7 +7,10 @@ namespace DefaultNamespace
         private float _moveX;
 
         [SerializeField] 
-        private float _moveSpeed;
+        private float _moveSpeed = 5.0f;
+
+        [SerializeField] 
+        private float _jumpForce = 10.0f;
         
         [SerializeField]
         private Animator _animator;
@@ -27,6 +30,7 @@ namespace DefaultNamespace
             }
             else
             {
+                Flip(_moveX);
                 SetRun();
                 _rigidBody.linearVelocity = new Vector2(_moveX * _moveSpeed, _rigidBody.linearVelocity.y);
             }
@@ -34,7 +38,26 @@ namespace DefaultNamespace
             //점프 처리
             if (Input.GetButtonDown("Jump"))
             {
-                
+                Jump(_jumpForce);
+            }
+        }
+        
+        private void Jump(float jumpForce)
+        {
+            _rigidBody.linearVelocity = new Vector2(_rigidBody.linearVelocity.x, 0); // Zero out vertical velocity
+            _rigidBody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            _animator.SetTrigger("jump");
+        }
+        
+        private void Flip(float direction)
+        {
+            if (direction > 0)
+            {
+                transform.localScale = new Vector3(1, 1, 1);
+            }
+            else if (direction < 0)
+            {
+                transform.localScale = new Vector3(-1, 1, 1);
             }
         }
 

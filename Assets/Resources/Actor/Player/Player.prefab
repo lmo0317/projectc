@@ -10065,7 +10065,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 100
-  m_Sprite: {fileID: 6991849013916550155, guid: 11847ea73c2247f59726cec7bc5df54d,
+  m_Sprite: {fileID: 4944230376442633554, guid: 11847ea73c2247f59726cec7bc5df54d,
     type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -10104,10 +10104,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed8b1ae4e4e52b34ea557c1c11e076fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_CategoryHash: 9.365925e-16
+  m_CategoryHash: 1.0429618e-14
   m_labelHash: 0.00000040954276
   m_SpriteKey: 8.913528e-15
-  m_SpriteHash: 673223268
+  m_SpriteHash: 27503621
 --- !u!1 &6297587305369587521
 GameObject:
   m_ObjectHideFlags: 0
@@ -10201,9 +10201,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4293831374172898837}
-  - component: {fileID: 4711322701654594024}
   - component: {fileID: 1965629995521285890}
   - component: {fileID: 4940753235864160719}
+  - component: {fileID: 2053369021753074442}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -10231,31 +10231,6 @@ Transform:
   - {fileID: 5032611060970581553}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4711322701654594024
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6336627228881948626}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d4a31ff104c69749a6b245ac327ad68, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 8
-  jumpForce: 60
-  doubleJumpForce: 40
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 1
-  groundCheck: {fileID: 8126186451492678282}
-  playeranim: {fileID: 5521506982037366098}
-  controlmode: 1
-  isPaused: 0
-  footsteps: {fileID: 1405630946334845263}
-  ImpactEffect: {fileID: 4681177208868027765}
-  fireRate: 0.5
 --- !u!50 &1965629995521285890
 Rigidbody2D:
   serializedVersion: 5
@@ -10320,3 +10295,19 @@ CapsuleCollider2D:
   m_Offset: {x: -0, y: 0.5}
   m_Size: {x: 0.6941155, y: 1.4246279}
   m_Direction: 0
+--- !u!114 &2053369021753074442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6336627228881948626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 446aefdce5c24758ad98c81b7ed5736b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _moveSpeed: 5
+  _jumpForce: 10
+  _animator: {fileID: 5521506982037366098}
+  _rigidBody: {fileID: 1965629995521285890}
