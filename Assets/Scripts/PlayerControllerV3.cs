@@ -22,7 +22,6 @@ namespace DefaultNamespace
         {
             //이동 처리
             _moveX = Input.GetAxis("Horizontal");
-
             if (_moveX == 0)
             {
                 SetIdle();
@@ -40,6 +39,11 @@ namespace DefaultNamespace
             {
                 Jump(_jumpForce);
             }
+            
+            if (Input.GetButtonDown("Fire1"))
+            {
+                Attack();
+            }
         }
         
         private void Jump(float jumpForce)
@@ -48,17 +52,18 @@ namespace DefaultNamespace
             _rigidBody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             _animator.SetTrigger("jump");
         }
+
+        private void Attack()
+        {
+            _animator.SetTrigger("attack");
+        }
         
         private void Flip(float direction)
         {
-            if (direction > 0)
-            {
-                transform.localScale = new Vector3(1, 1, 1);
-            }
-            else if (direction < 0)
-            {
-                transform.localScale = new Vector3(-1, 1, 1);
-            }
+            if (direction == 0)
+                return;
+           
+            transform.localScale = new Vector3(direction > 0 ? 1 : -1, 1, 1);
         }
 
         private void SetIdle()
@@ -69,25 +74,6 @@ namespace DefaultNamespace
         private void SetRun()
         {
             _animator.SetInteger("state", 1);
-        }
-
-        private void SetJump()
-        {
-            
-        }
-        
-        private void FlipSprite(float direction)
-        {
-            if (direction > 0)
-            {
-                // Moving right, flip sprite to the right
-                transform.localScale = new Vector3(1, 1, 1);
-            }
-            else if (direction < 0)
-            {
-                // Moving left, flip sprite to the left
-                transform.localScale = new Vector3(-1, 1, 1);
-            }
         }
     }
 }

@@ -4858,8 +4858,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2569593771016345990, guid: fd2f5158c67f186408fe27e0c1a5ed44,
         type: 3}
+      propertyPath: m_labelHash
+      value: 1.2985474e-36
+      objectReference: {fileID: 0}
+    - target: {fileID: 2569593771016345990, guid: fd2f5158c67f186408fe27e0c1a5ed44,
+        type: 3}
       propertyPath: m_SpriteHash
       value: 527687993
+      objectReference: {fileID: 0}
+    - target: {fileID: 2569593771016345990, guid: fd2f5158c67f186408fe27e0c1a5ed44,
+        type: 3}
+      propertyPath: m_CategoryHash
+      value: 1.9509184e-34
       objectReference: {fileID: 0}
     - target: {fileID: 4031483211520454278, guid: fd2f5158c67f186408fe27e0c1a5ed44,
         type: 3}
