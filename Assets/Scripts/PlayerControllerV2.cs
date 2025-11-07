@@ -1,8 +1,6 @@
 using UnityEngine;
 
-public enum Controls { mobile,pc}
-
-public class PlayerController : MonoBehaviour
+public class PlayerControllerV2 : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public float jumpForce = 10f;
@@ -15,9 +13,6 @@ public class PlayerController : MonoBehaviour
     private bool canDoubleJump = false;
 
     public Animator playeranim;
-
-    public Controls controlmode;
-   
 
     private float moveX;
     public bool isPaused = false;
@@ -35,11 +30,6 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         footEmissions = footsteps.emission;
-
-        if (controlmode == Controls.mobile)
-        {
-            UIManager.instance.EnableMobileControls();
-        }
     }
 
     private void Update()
@@ -49,13 +39,7 @@ public class PlayerController : MonoBehaviour
         if (isGroundedBool)
         {
             canDoubleJump = true; // Reset double jump when grounded
-
-            if (controlmode == Controls.pc)
-            {
-                moveX = Input.GetAxis("Horizontal");
-            }
-
-
+            moveX = Input.GetAxis("Horizontal");
             if (Input.GetButtonDown("Jump"))
             {
                 Jump(jumpForce);
@@ -80,9 +64,8 @@ public class PlayerController : MonoBehaviour
             // ... (your existing code for rotation)
 
             // Handle shooting
-            if (controlmode == Controls.pc && Input.GetButtonDown("Fire1") && Time.time >= nextFireTime)
+            if (Input.GetButtonDown("Fire1") && Time.time >= nextFireTime)
             {
-                Shoot();
                 nextFireTime = Time.time + 1f / fireRate; // Set the next allowed fire time
             }
         }
@@ -92,8 +75,6 @@ public class PlayerController : MonoBehaviour
         {
             FlipSprite(moveX);
         }
-
-        //impactEffect
 
         if(!wasonGround && isGroundedBool)
         {
@@ -107,21 +88,18 @@ public class PlayerController : MonoBehaviour
 
         
     }
-    public void SetAnimations()
+    private void SetAnimations()
     {
         if (moveX != 0 && isGroundedBool)
         {
-            playeranim.SetBool("Run", true);
+            playeranim.SetBool("run", true);
             footEmissions.rateOverTime= 35f;
         }
         else
         {
-            playeranim.SetBool("Run",false);
+            playeranim.SetBool("run",false);
             footEmissions.rateOverTime = 0f;
         }
-
-        //playeranim.SetBool("isGrounded", isGroundedBool);
-       
     }
 
     private void FlipSprite(float direction)
@@ -137,16 +115,12 @@ public class PlayerController : MonoBehaviour
             transform.localScale = new Vector3(-1, 1, 1);
         }
     }
+    
     private void FixedUpdate()
     {
         // Player movement
-        if (controlmode == Controls.pc)
-        {
-            moveX = Input.GetAxis("Horizontal");
-        }
-       
-
-
+        moveX = Input.GetAxis("Horizontal");
+        
         rb.linearVelocity = new Vector2(moveX * moveSpeed, rb.linearVelocity.y);
     }
 
@@ -154,7 +128,7 @@ public class PlayerController : MonoBehaviour
     {
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Zero out vertical velocity
         rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-        playeranim.SetTrigger("Jump");
+        playeranim.SetTrigger("jump");
     }
 
     private bool IsGrounded()
@@ -169,44 +143,6 @@ public class PlayerController : MonoBehaviour
         if(collision.gameObject.tag == "killzone")
         {
             GameManager.instance.Death();
-        }
-    }
-    
-    //mobile;
-    public void MobileMove(float value)
-    {
-        moveX = value;
-    }
-    public void MobileJump()
-    {
-        if (isGroundedBool)
-        {
-            // Perform initial jump
-            Jump(jumpForce);
-        }
-        else
-        {
-            // Perform double jump if allowed
-            if (canDoubleJump)
-            {
-                Jump(doubleJumpForce);
-                canDoubleJump = false; // Disable double jump until grounded again
-            }
-        }
-    }
-
-    public void Shoot()
-    {
-        //GameObject fireBall = Instantiate(projectile, firePoint.position, Quaternion.identity);
-        //fireBall.GetComponent<Rigidbody2D>().AddForce(firePoint.right * 500f);
-    }
-
-    public void MobileShoot()
-    {
-        if (Time.time >= nextFireTime)
-        {
-            Shoot();
-            nextFireTime = Time.time + 1f / fireRate; // Set the next allowed fire time
         }
     }
 }
