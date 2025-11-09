@@ -10065,7 +10065,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 100
-  m_Sprite: {fileID: 4944230376442633554, guid: 11847ea73c2247f59726cec7bc5df54d,
+  m_Sprite: {fileID: 7034338576483803127, guid: 11847ea73c2247f59726cec7bc5df54d,
     type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -10104,10 +10104,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed8b1ae4e4e52b34ea557c1c11e076fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_CategoryHash: 1.0429618e-14
-  m_labelHash: 0.00000040954276
+  m_CategoryHash: 1.9509184e-34
+  m_labelHash: 1.2985474e-36
   m_SpriteKey: 8.913528e-15
-  m_SpriteHash: 27503621
+  m_SpriteHash: 527687993
 --- !u!1 &6297587305369587521
 GameObject:
   m_ObjectHideFlags: 0
@@ -10292,8 +10292,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0, y: 0.5}
-  m_Size: {x: 0.6941155, y: 1.4246279}
+  m_Offset: {x: -0, y: 0.6}
+  m_Size: {x: 0.7, y: 1.2}
   m_Direction: 0
 --- !u!114 &2053369021753074442
 MonoBehaviour:
@@ -10307,7 +10307,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 446aefdce5c24758ad98c81b7ed5736b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _moveSpeed: 5
-  _jumpForce: 10
+  _moveSpeed: 8
+  _jumpForce: 50
   _animator: {fileID: 5521506982037366098}
   _rigidBody: {fileID: 1965629995521285890}
