@@ -62,12 +62,12 @@ Assets/
 **의존성**: 없음
 
 **완료 조건**:
-- [ ] 5개 DOTS 패키지 모두 설치 완료
-- [ ] Package Manager에서 설치된 패키지 확인 가능
-- [ ] 프로젝트 컴파일 에러 없음
-- [ ] Scripts 폴더 구조 생성 완료
-- [ ] Entity Debugger가 정상적으로 열림
-- [ ] 테스트 System이 컴파일되고 실행됨
+- [x] 5개 DOTS 패키지 모두 설치 완료
+- [x] Package Manager에서 설치된 패키지 확인 가능
+- [x] 프로젝트 컴파일 에러 없음
+- [x] Scripts 폴더 구조 생성 완료
+- [x] Entity Debugger가 정상적으로 열림
+- [x] 테스트 System이 컴파일되고 실행됨
 
 **예상 작업량**: 2-3시간
 
@@ -147,11 +147,11 @@ public class PlayerAuthoring : MonoBehaviour
 **의존성**: TASK-001
 
 **완료 조건**:
-- [ ] PlayerTag, MovementSpeed, PlayerInput 컴포넌트 작성 완료
-- [ ] PlayerAuthoring 클래스 작성 완료
-- [ ] 모든 스크립트 컴파일 에러 없음
-- [ ] Authoring 클래스의 Baker가 정상 작동함
-- [ ] Inspector에서 MoveSpeed 파라미터 노출 확인
+- [x] PlayerTag, MovementSpeed, PlayerInput 컴포넌트 작성 완료
+- [x] PlayerAuthoring 클래스 작성 완료
+- [x] 모든 스크립트 컴파일 에러 없음
+- [x] Authoring 클래스의 Baker가 정상 작동함
+- [x] Inspector에서 MoveSpeed 파라미터 노출 확인
 
 **예상 작업량**: 2-3시간
 
@@ -269,12 +269,12 @@ public partial struct PlayerMovementJob : IJobEntity
 **의존성**: TASK-002
 
 **완료 조건**:
-- [ ] PlayerInputSystem 작성 완료
-- [ ] PlayerMovementSystem 작성 완료
-- [ ] 두 시스템 모두 컴파일 에러 없음
-- [ ] Burst Compile 속성 적용됨
-- [ ] IJobEntity를 사용한 병렬 처리 구현
-- [ ] 시스템 실행 순서가 올바름 (입력 → 이동)
+- [x] PlayerInputSystem 작성 완료
+- [x] PlayerMovementSystem 작성 완료
+- [x] 두 시스템 모두 컴파일 에러 없음
+- [x] Burst Compile 속성 적용됨
+- [x] IJobEntity를 사용한 병렬 처리 구현
+- [x] 시스템 실행 순서가 올바름 (입력 → 이동)
 
 **예상 작업량**: 4-5시간
 
@@ -352,17 +352,17 @@ public partial struct PlayerMovementJob : IJobEntity
 **의존성**: TASK-003
 
 **완료 조건**:
-- [ ] Ground 평면 생성됨
-- [ ] Player GameObject 생성 및 PlayerAuthoring 부착됨
-- [ ] 카메라가 플레이어를 볼 수 있게 배치됨
-- [ ] Play 모드에서 WASD로 플레이어 이동 가능
-- [ ] Arrow Keys로도 이동 가능
-- [ ] 대각선 이동 정상 작동
-- [ ] Entity Debugger에서 Player 엔티티 및 컴포넌트 확인 가능
-- [ ] PlayerInput.Movement 값이 입력에 따라 변화함
-- [ ] Profiler에서 Burst 컴파일 확인
-- [ ] 프레임률 60 FPS 이상 유지
-- [ ] 콘솔에 에러 없음
+- [x] Ground 평면 생성됨
+- [x] Player GameObject 생성 및 PlayerAuthoring 부착됨
+- [x] 카메라가 플레이어를 볼 수 있게 배치됨
+- [x] Play 모드에서 WASD로 플레이어 이동 가능
+- [x] Arrow Keys로도 이동 가능
+- [x] 대각선 이동 정상 작동
+- [x] Entity Debugger에서 Player 엔티티 및 컴포넌트 확인 가능
+- [x] PlayerInput.Movement 값이 입력에 따라 변화함
+- [x] Profiler에서 Burst 컴파일 확인
+- [x] 프레임률 60 FPS 이상 유지
+- [x] 콘솔에 에러 없음
 
 **예상 작업량**: 3-4시간
 
