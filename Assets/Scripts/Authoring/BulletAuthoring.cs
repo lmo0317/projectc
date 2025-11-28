@@ -11,7 +11,8 @@ public class BulletAuthoring : MonoBehaviour
     {
         public override void Bake(BulletAuthoring authoring)
         {
-            var entity = GetEntity(TransformUsageFlags.Dynamic);
+            // Renderable | Dynamic: 렌더링되면서 움직이는 Entity
+            var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
 
             AddComponent(entity, new BulletTag());
             AddComponent(entity, new BulletSpeed { Value = authoring.Speed });

@@ -2,6 +2,17 @@
 
 이 파일은 이 저장소에서 작업할 때 Claude Code (claude.ai/code)에게 가이드를 제공합니다.
 
+## 🌐 언어 설정 (중요!)
+
+**모든 응답은 반드시 한국어로 작성해야 합니다.**
+
+- ✅ **올바름**: 코드 설명, 에러 메시지, 가이드, 모든 커뮤니케이션을 한국어로 작성
+- ❌ **금지**: 영어로 응답하지 마세요
+- 📝 **예외**: 코드 내 주석은 한국어, 변수명/함수명은 영어 사용 (프로그래밍 관례)
+- 💬 **커밋 메시지**: 반드시 한국어로 작성 (개발팀 규칙)
+
+이 프로젝트의 개발팀은 한국어를 사용하므로, Claude의 모든 설명과 응답도 한국어로 제공되어야 합니다.
+
 ## 프로젝트 개요
 
 초기 개발 단계의 Unity 6 (버전 6000.1.7f1) 게임 프로젝트입니다. 사용 기술:
@@ -57,12 +68,65 @@ Unity 프로젝트이므로 대부분의 작업은 Unity Editor를 통해 수행
 
 ## 코드 아키텍처
 
-### 컴포넌트 기반 아키텍처
+### Unity ECS (Entity Component System) 아키텍처
 
-Unity는 Entity-Component-System 방식을 사용:
-- GameObject는 Component를 포함하는 엔티티
+이 프로젝트는 **Unity Entities 패키지**를 사용하여 데이터 지향 기술 스택(DOTS)을 구현합니다:
+- **Entity**: 고유 식별자 (게임 오브젝트의 경량화 버전)
+- **Component**: 데이터만 포함 (`IComponentData` 구조체)
+- **System**: 로직 처리 (`ISystem` 구조체 또는 `SystemBase` 클래스)
+- **Baker**: GameObject를 Entity로 변환하는 Authoring 클래스
+
+**중요한 ECS 규칙:**
+
+#### 1. TransformUsageFlags 설정 (Baker에서)
+Entity의 Transform 동작을 지정할 때 Baker에서 `GetEntity()` 호출 시 적절한 플래그 조합을 사용해야 합니다:
+
+```csharp
+// ❌ 잘못된 예: 움직이기만 하고 렌더링 안 됨
+var entity = GetEntity(TransformUsageFlags.Dynamic);
+
+// ✅ 올바른 예: 움직이면서 렌더링됨
+var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
+```
+
+**TransformUsageFlags 종류:**
+- `Dynamic`: Entity의 Transform이 런타임에 변경됨 (움직임)
+- `Renderable`: Entity가 화면에 렌더링됨 (보임)
+- `Dynamic | Renderable`: 움직이면서 보이는 Entity (총알, 플레이어 등)
+
+#### 2. RefRW<T> 컴포넌트 수정 방법
+ECS에서 컴포넌트를 수정할 때는 **절대 로컬 변수로 복사하지 마세요**. C# 구조체는 값 타입이므로 복사본을 수정하면 원본은 변경되지 않습니다.
+
+```csharp
+// ❌ 잘못된 예: 로컬 복사본 생성 (변경사항 유실!)
+foreach (var (shootConfig, ...) in SystemAPI.Query<RefRW<AutoShootConfig>, ...>())
+{
+    var config = shootConfig.ValueRW;  // 복사본 생성
+    config.Timer += deltaTime;          // 복사본만 수정됨
+    // 원본 컴포넌트는 변경되지 않음!
+}
+
+// ✅ 올바른 예: ValueRW를 통해 직접 수정
+foreach (var (shootConfig, ...) in SystemAPI.Query<RefRW<AutoShootConfig>, ...>())
+{
+    shootConfig.ValueRW.Timer += deltaTime;  // 원본 직접 수정
+    if (shootConfig.ValueRW.Timer >= shootConfig.ValueRW.Interval)
+    {
+        shootConfig.ValueRW.Timer = 0f;
+        // 로직 처리...
+    }
+}
+```
+
+**핵심 원칙:**
+- `RefRW<T>.ValueRW`는 컴포넌트의 **참조**를 제공하지만, 이를 변수에 할당하면 구조체가 **복사**됩니다
+- 컴포넌트 필드에 접근할 때는 항상 `shootConfig.ValueRW.FieldName` 형태로 직접 접근
+- 중간 변수를 만들지 말고 체인 방식으로 접근
+
+#### 3. 기타 MonoBehaviour 컴포넌트
+레거시 GameObject 기반 스크립트도 일부 사용 중:
 - 동작은 GameObject에 부착된 MonoBehaviour 스크립트를 통해 정의
-- 현재 프로젝트는 최소한의 커스텀 스크립트만 보유 (`Assets/TutorialInfo/Scripts/`의 템플릿 파일만 존재)
+- 현재 프로젝트는 ECS로 전환 중 (`Assets/TutorialInfo/Scripts/`의 템플릿 파일만 존재)
 
 ### 디렉토리 구조
 

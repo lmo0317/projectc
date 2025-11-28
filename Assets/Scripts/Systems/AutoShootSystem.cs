@@ -11,7 +11,8 @@ public partial struct AutoShootSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<PlayerTag>();
+        // SubScene 환경에서 테스트를 위해 임시로 주석 처리
+        // state.RequireForUpdate<PlayerTag>();
     }
 
     [BurstCompile]
@@ -26,16 +27,16 @@ public partial struct AutoShootSystem : ISystem
         foreach (var (transform, shootConfig, playerTag) in
                  SystemAPI.Query<RefRO<LocalTransform>, RefRW<AutoShootConfig>, RefRO<PlayerTag>>())
         {
-            var config = shootConfig.ValueRW;
-            config.TimeSinceLastShot += deltaTime;
+            // ValueRW를 통해 컴포넌트 직접 수정 (로컬 복사본 생성 방지)
+            shootConfig.ValueRW.TimeSinceLastShot += deltaTime;
 
             // 발사 간격 체크
-            if (config.TimeSinceLastShot >= config.FireRate)
+            if (shootConfig.ValueRW.TimeSinceLastShot >= shootConfig.ValueRW.FireRate)
             {
-                config.TimeSinceLastShot = 0f;
+                shootConfig.ValueRW.TimeSinceLastShot = 0f;
 
                 // 총알 Entity 생성
-                var bulletEntity = ecb.Instantiate(config.BulletPrefab);
+                var bulletEntity = ecb.Instantiate(shootConfig.ValueRW.BulletPrefab);
 
                 // 총알 위치 설정 (플레이어 위치)
                 ecb.SetComponent(bulletEntity, LocalTransform.FromPosition(transform.ValueRO.Position));
