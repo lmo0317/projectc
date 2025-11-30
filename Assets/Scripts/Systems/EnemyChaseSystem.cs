@@ -66,6 +66,10 @@ public partial struct EnemyChaseJob : IJobEntity
 
             // Transform 위치 업데이트
             transform.Position += movement;
+
+            // 회전: 플레이어를 향해 회전 (부드럽게 Slerp)
+            quaternion targetRotation = quaternion.LookRotationSafe(normalizedDirection, math.up());
+            transform.Rotation = math.slerp(transform.Rotation, targetRotation, 10f * DeltaTime);
         }
     }
 }
