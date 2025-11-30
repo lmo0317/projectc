@@ -738,5 +738,368 @@ ECS: "Bullet Archetype만 해당!"
 
 ---
 
-**작성일**: 2025-11-26, 2025-11-27
-**프로젝트**: projectc (Unity DOTS Phase 1-2)
+## IJobEntity의 Execute 자동 호출 메커니즘
+
+`IJobEntity`의 `Execute` 함수가 어떻게 자동으로 호출되는지 상세히 설명합니다.
+
+### 기본 개념
+
+`IJobEntity`는 Unity ECS에서 **자동으로 엔티티를 순회**하며 `Execute` 함수를 호출하는 특별한 인터페이스입니다.
+
+개발자는 로직만 작성하면, Unity ECS가 나머지를 자동 처리합니다:
+- 컴포넌트를 가진 엔티티 검색
+- 각 엔티티마다 Execute 호출
+- 병렬 처리 (멀티스레드)
+
+### 호출 흐름 상세 분석
+
+```csharp
+[BurstCompile]
+public partial struct EnemyChaseJob : IJobEntity
+{
+    public float3 PlayerPosition;
+    public float DeltaTime;
+
+    // ⚙️ 이 함수는 자동으로 각 엔티티마다 호출됩니다!
+    void Execute(ref LocalTransform transform, in EnemySpeed speed)
+    {
+        // 로직...
+    }
+}
+```
+
+#### 호출되는 시점
+
+```csharp
+public void OnUpdate(ref SystemState state)
+{
+    // 1. Job 인스턴스 생성
+    var job = new EnemyChaseJob
+    {
+        PlayerPosition = playerPosition,
+        DeltaTime = deltaTime
+    };
+
+    // 2. ScheduleParallel() 호출 시점에 Unity ECS가 자동으로:
+    //    - EnemySpeed + LocalTransform을 가진 모든 엔티티를 찾음
+    //    - 각 엔티티마다 Execute()를 호출함
+    job.ScheduleParallel();
+}
+```
+
+### 단계별 상세 설명
+
+#### Step 1: 쿼리 자동 생성
+
+Unity ECS는 `Execute` 함수의 **파라미터**를 보고 자동으로 쿼리를 생성합니다:
+
+```csharp
+void Execute(ref LocalTransform transform, in EnemySpeed speed)
+//           ^^^                          ^^
+//           필요한 컴포넌트들
+```
+
+**자동 생성되는 쿼리 (의사 코드)**:
+```csharp
+// Unity가 내부적으로 이렇게 쿼리를 생성합니다
+var query = SystemAPI.QueryBuilder()
+    .WithAll<LocalTransform>()   // Execute 파라미터에 있음
+    .WithAll<EnemySpeed>()       // Execute 파라미터에 있음
+    .Build();
+```
+
+#### Step 2: 엔티티 순회 및 Execute 호출
+
+```csharp
+// Unity가 내부적으로 수행하는 작업 (의사 코드)
+foreach (var entity in matchingEntities)
+{
+    // 각 엔티티에서 컴포넌트 가져오기
+    ref LocalTransform transform = entity.GetComponent<LocalTransform>();
+    ref EnemySpeed speed = entity.GetComponent<EnemySpeed>();
+
+    // Execute 호출!
+    job.Execute(ref transform, in speed);
+}
+```
+
+#### Step 3: 병렬 처리
+
+`ScheduleParallel()`을 호출하면 Unity Job System이 **여러 스레드에서 동시 실행**합니다:
+
+```
+엔티티 100개가 있다면:
+
+스레드 1: Execute(entity 1~25)
+스레드 2: Execute(entity 26~50)
+스레드 3: Execute(entity 51~75)
+스레드 4: Execute(entity 76~100)
+
+⚡ 병렬로 실행되어 4배 빠름!
+```
+
+### 실제 예제로 이해하기
+
+현재 씬 상태를 가정:
+```
+PlayerSubScene:
+- Player (PlayerTag, LocalTransform, MovementSpeed)
+- Enemy_1 (EnemyTag, LocalTransform, EnemySpeed, EnemyHealth)
+- Enemy_2 (EnemyTag, LocalTransform, EnemySpeed, EnemyHealth)
+- Enemy_3 (EnemyTag, LocalTransform, EnemySpeed, EnemyHealth)
+```
+
+#### OnUpdate 실행 흐름:
+
+```csharp
+public void OnUpdate(ref SystemState state)
+{
+    // 1️⃣ 플레이어 위치 쿼리 (한 번만)
+    float3 playerPosition = float3.zero;
+    foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerTag>())
+    {
+        playerPosition = transform.ValueRO.Position; // (0, 1, 0)
+        break;
+    }
+
+    // 2️⃣ Job 생성 및 스케줄링
+    new EnemyChaseJob
+    {
+        PlayerPosition = playerPosition,  // (0, 1, 0)
+        DeltaTime = 0.016f               // 60 FPS 기준
+    }.ScheduleParallel();
+    // ⚙️ 여기서 Unity가 자동으로 Execute를 호출합니다!
+}
+```
+
+#### Execute 호출 과정 (내부 동작):
+
+```csharp
+// Unity가 자동으로 수행:
+
+// Enemy_1에 대해 Execute 호출
+Execute(
+    ref Enemy_1.LocalTransform,  // Position: (5, 0, 5)
+    in Enemy_1.EnemySpeed        // Value: 3
+);
+
+// Enemy_2에 대해 Execute 호출
+Execute(
+    ref Enemy_2.LocalTransform,  // Position: (-5, 0, 5)
+    in Enemy_2.EnemySpeed        // Value: 3
+);
+
+// Enemy_3에 대해 Execute 호출
+Execute(
+    ref Enemy_3.LocalTransform,  // Position: (0, 0, 10)
+    in Enemy_3.EnemySpeed        // Value: 3
+);
+```
+
+**Player는 제외됨**: EnemySpeed 컴포넌트가 없기 때문!
+
+### Execute 파라미터의 의미
+
+```csharp
+void Execute(ref LocalTransform transform, in EnemySpeed speed)
+//           ^^^                           ^^
+//           |                             |
+//           |                             +-- 읽기 전용 (성능 최적화)
+//           +-- 읽기/쓰기 가능 (위치 업데이트 필요)
+```
+
+#### `ref` (읽기/쓰기)
+- 컴포넌트를 **수정**할 수 있음
+- `transform.Position += movement;` ✅ 가능
+- 쓰기 권한이 필요한 경우 사용
+
+#### `in` (읽기 전용)
+- 컴포넌트를 **읽기만** 가능
+- `speed.Value = 10;` ❌ 불가능
+- 성능 최적화 (복사 안 함)
+- 읽기만 필요한 경우 사용
+
+### 쿼리 필터링 추가
+
+**EnemyTag**를 가진 엔티티만 처리하고 싶다면:
+
+```csharp
+[BurstCompile]
+[WithAll(typeof(EnemyTag))]  // ✅ 필터 추가!
+public partial struct EnemyChaseJob : IJobEntity
+{
+    public float3 PlayerPosition;
+    public float DeltaTime;
+
+    void Execute(ref LocalTransform transform, in EnemySpeed speed)
+    {
+        // EnemyTag를 가진 엔티티만 여기 들어옴!
+    }
+}
+```
+
+**효과**:
+- Player는 제외됨 (PlayerTag만 있음)
+- Enemy만 처리됨 (EnemyTag가 있음)
+
+### Schedule vs ScheduleParallel
+
+#### `Schedule()` - 순차 실행
+```csharp
+job.Schedule();
+// 단일 스레드에서 순차 실행
+// Enemy_1 → Enemy_2 → Enemy_3
+```
+
+#### `ScheduleParallel()` - 병렬 실행 ⚡
+```csharp
+job.ScheduleParallel();
+// 여러 스레드에서 동시 실행
+// Enemy_1, Enemy_2, Enemy_3 동시 처리
+```
+
+**성능 비교**:
+- 순차: 1ms × 100개 = 100ms
+- 병렬 (4코어): 1ms × 100개 ÷ 4 = 25ms (4배 빠름)
+
+### 실행 순서 보장
+
+```csharp
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(EnemySpawnSystem))]
+public partial struct EnemyChaseSystem : ISystem
+```
+
+**실행 순서**:
+1. EnemySpawnSystem 실행 (몬스터 스폰)
+2. **EnemyChaseSystem 실행** (추적 시작)
+3. Job 스케줄링
+4. **Execute 자동 호출** (각 Enemy마다)
+
+### 비교: Entities.ForEach vs IJobEntity
+
+#### SystemBase + Entities.ForEach (레거시)
+```csharp
+protected override void OnUpdate()
+{
+    float deltaTime = Time.DeltaTime;
+
+    Entities
+        .WithAll<EnemyTag>()
+        .ForEach((ref LocalTransform transform, in EnemySpeed speed) =>
+        {
+            // 로직...
+        })
+        .ScheduleParallel();
+}
+```
+
+#### ISystem + IJobEntity (최신, 권장) ✅
+```csharp
+public void OnUpdate(ref SystemState state)
+{
+    new EnemyChaseJob { ... }.ScheduleParallel();
+}
+
+[BurstCompile]
+public partial struct EnemyChaseJob : IJobEntity
+{
+    void Execute(ref LocalTransform transform, in EnemySpeed speed)
+    {
+        // 로직...
+    }
+}
+```
+
+**IJobEntity의 장점**:
+- Burst 컴파일 최적화
+- 더 빠른 성능
+- 명확한 구조 분리
+
+### Archetype과의 관계
+
+Execute는 Archetype 필터링을 자동으로 활용합니다:
+
+```
+모든 Entity:
+├─ Player Archetype: [PlayerTag, LocalTransform, MovementSpeed]
+│   └─ Player (제외됨 - EnemySpeed 없음)
+│
+├─ Enemy Archetype: [EnemyTag, LocalTransform, EnemySpeed, EnemyHealth]
+│   ├─ Enemy_1 (Execute 호출 ✅)
+│   ├─ Enemy_2 (Execute 호출 ✅)
+│   └─ Enemy_3 (Execute 호출 ✅)
+│
+└─ Bullet Archetype: [BulletTag, LocalTransform, BulletSpeed]
+    └─ Bullet (제외됨 - EnemySpeed 없음)
+```
+
+**성능 최적화**:
+- Enemy Archetype의 Chunk만 순회
+- Player, Bullet은 아예 접근하지 않음
+- 연속 메모리 접근으로 CPU 캐시 효율 극대화
+
+### 디버깅 팁
+
+Execute가 호출되는지 확인하려면:
+
+```csharp
+void Execute(ref LocalTransform transform, in EnemySpeed speed)
+{
+    // ⚠️ 주의: Burst 컴파일 시 Debug.Log 사용 불가!
+    // [BurstCompile]를 잠시 제거하고 테스트:
+
+    // UnityEngine.Debug.Log($"Execute called for enemy at {transform.Position}");
+
+    float3 direction = PlayerPosition - transform.Position;
+    // ...
+}
+```
+
+### 요약 비교표
+
+| 항목 | 설명 |
+|------|------|
+| **누가 호출?** | Unity ECS가 자동으로 |
+| **언제 호출?** | `ScheduleParallel()` 실행 시 |
+| **몇 번 호출?** | 조건에 맞는 엔티티 개수만큼 |
+| **어떤 엔티티?** | Execute 파라미터의 컴포넌트를 모두 보유한 엔티티 |
+| **어떻게 실행?** | 병렬 (멀티스레드) |
+| **성능** | Burst 컴파일로 최적화 |
+| **메모리 접근** | 연속 메모리 (Archetype Chunk) |
+
+### 핵심 정리
+
+**IJobEntity의 Execute는 자동 호출 함수입니다!**
+
+**동작 원리**:
+```
+개발자: Execute 파라미터 정의
+    ↓
+Unity ECS: 파라미터 분석 → 쿼리 자동 생성
+    ↓
+Unity ECS: Archetype 필터링 → 조건 맞는 엔티티만 선택
+    ↓
+Unity Job System: 병렬 처리 → 각 엔티티마다 Execute 호출
+    ↓
+결과: 모든 Enemy가 플레이어 추적
+```
+
+**개발자가 할 일**:
+1. Execute 파라미터 정의 (필요한 컴포넌트)
+2. Execute 로직 작성 (추적 이동)
+3. ScheduleParallel() 호출
+
+**Unity ECS가 알아서 하는 일**:
+1. 쿼리 생성
+2. 엔티티 검색
+3. Execute 호출
+4. 병렬 처리
+5. 성능 최적화
+
+**결론**: 개발자는 로직만 작성하면 됩니다! ECS가 나머지를 자동으로 처리합니다. 🚀
+
+---
+
+**작성일**: 2025-11-26, 2025-11-27, 2025-11-30
+**프로젝트**: projectc (Unity DOTS Phase 1-4)
