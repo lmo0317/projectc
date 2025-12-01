@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 6930581378357823035}
   - component: {fileID: 6119517704887342171}
   - component: {fileID: 451142572704029802}
-  - component: {fileID: 2768607327168560616}
   - component: {fileID: 1297175906091042747}
   m_Layer: 0
   m_Name: Enemy
@@ -88,27 +87,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2768607327168560616
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5910481605589794920}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1297175906091042747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -123,3 +101,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Health: 100
   Speed: 3
+  ColliderRadius: 0.5
