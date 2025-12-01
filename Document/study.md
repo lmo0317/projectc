@@ -6,6 +6,8 @@
 3. [Entity Prefab과 Baking](#entity-prefab과-baking)
 4. [Query vs QueryBuilder](#query-vs-querybuilder)
 5. [Archetype과 Query 성능](#archetype과-query-성능)
+6. [IJobEntity의 Execute 자동 호출 메커니즘](#ijoventity의-execute-자동-호출-메커니즘)
+7. [Unity DOTS Physics와 충돌 처리](#unity-dots-physics와-충돌-처리)
 
 ---
 
@@ -1101,5 +1103,300 @@ Unity Job System: 병렬 처리 → 각 엔티티마다 Execute 호출
 
 ---
 
-**작성일**: 2025-11-26, 2025-11-27, 2025-11-30
-**프로젝트**: projectc (Unity DOTS Phase 1-4)
+## Unity DOTS Physics와 충돌 처리
+
+Unity Physics 패키지를 사용한 충돌 감지 및 처리 메커니즘입니다.
+
+### ITriggerEventsJob - 트리거 이벤트 처리
+
+Physics 시뮬레이션에서 발생한 트리거 이벤트를 처리하는 Job입니다.
+
+#### 기본 구조
+
+```csharp
+[BurstCompile]
+struct BulletHitJob : ITriggerEventsJob
+{
+    [ReadOnly] public ComponentLookup<BulletTag> BulletLookup;
+    [ReadOnly] public ComponentLookup<EnemyTag> EnemyLookup;
+    public ComponentLookup<EnemyHealth> HealthLookup;
+    public EntityCommandBuffer.ParallelWriter ECB;
+
+    public void Execute(TriggerEvent triggerEvent)
+    {
+        Entity entityA = triggerEvent.EntityA;
+        Entity entityB = triggerEvent.EntityB;
+
+        // 충돌 처리...
+    }
+}
+```
+
+#### 핵심 개념
+
+**1. Execute 호출 패턴**
+- `Schedule()` 1번 호출 → `Execute()` N번 호출
+- N = 트리거 이벤트 발생 횟수
+- 각 충돌마다 Execute가 한 번씩 호출됨
+
+```
+프레임 1:
+- 총알 3개가 적과 충돌
+- Schedule() 1번 호출
+- Execute() 3번 호출 (각 충돌마다)
+
+프레임 2:
+- 총알 1개가 적과 충돌
+- Schedule() 1번 호출
+- Execute() 1번 호출
+```
+
+**2. ComponentLookup<T>**
+
+Entity의 컴포넌트에 접근하는 방법:
+
+```csharp
+// 읽기 전용 - [ReadOnly] 속성 필수
+[ReadOnly] public ComponentLookup<BulletTag> BulletLookup;
+
+// 읽기/쓰기
+public ComponentLookup<EnemyHealth> HealthLookup;
+
+// 사용
+if (BulletLookup.HasComponent(entity))  // 컴포넌트 보유 확인
+{
+    var health = HealthLookup[entity];  // 컴포넌트 읽기
+    health.Value -= 10;
+    HealthLookup[entity] = health;       // 컴포넌트 쓰기
+}
+```
+
+**3. EntityCommandBuffer.ParallelWriter**
+
+병렬 처리에서 안전하게 Entity 명령을 기록:
+
+```csharp
+public EntityCommandBuffer.ParallelWriter ECB;
+
+// sortKey: 병렬 처리 시 순서 보장용 (보통 0 사용)
+ECB.DestroyEntity(sortKey, entity);
+ECB.SetComponent(sortKey, entity, component);
+```
+
+#### ITriggerEventsJob 스케줄링
+
+```csharp
+public void OnUpdate(ref SystemState state)
+{
+    var ecb = new EntityCommandBuffer(Allocator.TempJob);
+    var simulation = SystemAPI.GetSingleton<SimulationSingleton>();
+
+    // Job 스케줄
+    state.Dependency = new BulletHitJob
+    {
+        BulletLookup = SystemAPI.GetComponentLookup<BulletTag>(true),
+        ECB = ecb.AsParallelWriter()
+    }.Schedule(simulation, state.Dependency);
+
+    // 완료 대기 및 명령 실행
+    state.Dependency.Complete();
+    ecb.Playback(state.EntityManager);
+    ecb.Dispose();
+}
+```
+
+### state.Dependency - Job 체이닝
+
+여러 Job을 순서대로 실행하기 위한 의존성 관리 시스템입니다.
+
+#### 핵심 패턴: 읽기 → 쓰기
+
+```csharp
+// ⚙️ 기존 의존성 읽기
+state.Dependency = new MyJob { ... }.Schedule(state.Dependency);
+//                                              ^^^^^^^^^^^^^^^
+//                                              이전 Job이 끝나야 시작
+
+// 다음 Job도 체이닝
+state.Dependency = new NextJob { ... }.Schedule(state.Dependency);
+```
+
+**왜 읽고 쓰는가?**
+
+```
+프레임 1:
+1. state.Dependency 읽기 → JobHandle_A (이전 프레임 Job)
+2. MyJob.Schedule(JobHandle_A) → "JobHandle_A가 끝나면 실행해"
+3. 반환값 JobHandle_B를 state.Dependency에 쓰기
+4. 다음 프레임에서 JobHandle_B를 읽음
+
+프레임 2:
+1. state.Dependency 읽기 → JobHandle_B (프레임 1의 MyJob)
+2. NextJob.Schedule(JobHandle_B) → "JobHandle_B가 끝나면 실행해"
+3. 반환값 JobHandle_C를 state.Dependency에 쓰기
+```
+
+#### Job 의존성 체인 예시
+
+```csharp
+// Job A: 적 이동
+state.Dependency = new EnemyMoveJob().ScheduleParallel(state.Dependency);
+
+// Job B: 충돌 체크 (적 이동 후 실행)
+state.Dependency = new BulletHitJob().Schedule(simulation, state.Dependency);
+
+// Job C: 데미지 처리 (충돌 체크 후 실행)
+state.Dependency = new DamageJob().ScheduleParallel(state.Dependency);
+```
+
+**실행 순서**:
+```
+Job A 시작 → Job A 끝 → Job B 시작 → Job B 끝 → Job C 시작 → Job C 끝
+```
+
+#### Complete()의 역할
+
+```csharp
+state.Dependency.Complete();  // 현재 프레임 내에서 Job 완료 대기
+ecb.Playback(state.EntityManager);  // Job 결과를 즉시 적용
+```
+
+**중요**: Complete()는 다음 프레임으로 넘어가지 않습니다!
+- 같은 프레임 안에서 Job이 끝날 때까지 대기
+- Job 완료 후 다음 코드 실행
+- 프레임은 OnUpdate 전체가 끝나야 진행
+
+### state.RequireForUpdate<T>
+
+시스템 실행 조건을 설정합니다.
+
+```csharp
+public void OnCreate(ref SystemState state)
+{
+    state.RequireForUpdate<SimulationSingleton>();
+}
+```
+
+**효과**:
+- `SimulationSingleton` 컴포넌트가 없으면 `OnUpdate` 실행 안 됨
+- Physics World가 준비되지 않았으면 시스템 비활성화
+- 불필요한 실행 방지 (성능 최적화)
+
+**사용 시기**:
+- Physics 시스템: `SimulationSingleton` 필요
+- Player 관련 시스템: `PlayerTag` 필요
+- 특정 상태에서만 동작: 상태 컴포넌트 필요
+
+### 프레임 내 실행 흐름
+
+```
+[프레임 N 시작]
+
+OnUpdate() 시작
+    ↓
+state.Dependency 읽기 (프레임 N-1의 JobHandle)
+    ↓
+new Job().Schedule(이전 JobHandle)
+    ↓
+state.Dependency 쓰기 (새 JobHandle 저장)
+    ↓
+state.Dependency.Complete() ← 여기서 대기 (프레임 안에서)
+    ↓
+Job 실행 완료
+    ↓
+ecb.Playback() (결과 적용)
+    ↓
+OnUpdate() 끝
+
+[프레임 N 끝]
+[프레임 N+1 시작] ← 여기서 다음 프레임
+```
+
+### 실전 예제: BulletHitSystem
+
+총알-몬스터 충돌 처리 시스템의 전체 흐름:
+
+```csharp
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateAfter(typeof(PhysicsSystemGroup))]
+public partial struct BulletHitSystem : ISystem
+{
+    public void OnCreate(ref SystemState state)
+    {
+        // Physics World 준비될 때까지 대기
+        state.RequireForUpdate<SimulationSingleton>();
+    }
+
+    public void OnUpdate(ref SystemState state)
+    {
+        // 1. EntityCommandBuffer 생성
+        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var simulation = SystemAPI.GetSingleton<SimulationSingleton>();
+
+        // 2. Job 스케줄 (이전 Physics Job 후 실행)
+        state.Dependency = new BulletHitJob
+        {
+            BulletLookup = SystemAPI.GetComponentLookup<BulletTag>(true),
+            EnemyLookup = SystemAPI.GetComponentLookup<EnemyTag>(true),
+            DamageLookup = SystemAPI.GetComponentLookup<DamageValue>(true),
+            HealthLookup = SystemAPI.GetComponentLookup<EnemyHealth>(false),
+            ECB = ecb.AsParallelWriter()
+        }.Schedule(simulation, state.Dependency);
+
+        // 3. Job 완료 대기 (같은 프레임 안에서)
+        state.Dependency.Complete();
+
+        // 4. 명령 실행 (Entity 삭제, 컴포넌트 변경)
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+    }
+}
+```
+
+**실행 흐름**:
+```
+PhysicsSystemGroup 실행 (충돌 감지)
+    ↓
+BulletHitSystem.OnUpdate 시작
+    ↓
+BulletHitJob.Schedule() - 충돌 이벤트 처리 Job 등록
+    ↓
+Execute() N번 호출 (각 충돌마다)
+    - 총알 A ↔ 몬스터 1
+    - 총알 B ↔ 몬스터 2
+    - 총알 C ↔ 몬스터 1
+    ↓
+Complete() - Job 완료 대기
+    ↓
+Playback() - ECB 명령 실행
+    - 총알 A, B, C 삭제
+    - 몬스터 1 체력 -50
+    - 몬스터 2 체력 -25
+```
+
+### 핵심 정리
+
+**ITriggerEventsJob**:
+- 충돌 이벤트 1개당 Execute() 1번 호출
+- ComponentLookup으로 Entity 데이터 접근
+- EntityCommandBuffer로 안전한 Entity 수정
+
+**state.Dependency**:
+- 읽기: 이전 Job 의존성 가져오기
+- 쓰기: 새 Job 의존성 저장하기
+- Job 순서 보장을 위한 체인 구조
+
+**Complete()**:
+- 현재 프레임 안에서 Job 완료 대기
+- 다음 프레임으로 넘어가지 않음
+- ECB 명령 실행 전 필수
+
+**RequireForUpdate**:
+- 필요한 컴포넌트가 없으면 OnUpdate 실행 안 됨
+- Physics, Player 등 전제 조건 체크
+- 불필요한 시스템 실행 방지
+
+---
+
+**작성일**: 2025-11-26, 2025-11-27, 2025-11-30, 2025-12-01
+**프로젝트**: projectc (Unity DOTS Phase 1-5)
