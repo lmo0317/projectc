@@ -46,28 +46,18 @@ public partial struct EnemyChaseJob : IJobEntity
 
     void Execute(ref LocalTransform transform, in EnemySpeed speed)
     {
-        // 플레이어로의 방향 벡터 계산
+        // Transform 직접 수정 방식으로 복구
         float3 direction = PlayerPosition - transform.Position;
-
-        // Y축은 무시 (XZ 평면 이동)
         direction.y = 0;
 
-        // 거리 확인 (제곱 거리로 비교하여 sqrt 연산 절약)
         float distanceSq = math.lengthsq(direction);
 
-        // 최소 거리 체크 (0.1 유닛 이내면 이동 안 함)
-        if (distanceSq > 0.01f) // 0.1 * 0.1
+        if (distanceSq > 0.01f)
         {
-            // 방향 정규화
             float3 normalizedDirection = math.normalize(direction);
-
-            // 이동 거리 = 방향 * 속도 * deltaTime
             float3 movement = normalizedDirection * speed.Value * DeltaTime;
-
-            // Transform 위치 업데이트
             transform.Position += movement;
 
-            // 회전: 플레이어를 향해 회전 (부드럽게 Slerp)
             quaternion targetRotation = quaternion.LookRotationSafe(normalizedDirection, math.up());
             transform.Rotation = math.slerp(transform.Rotation, targetRotation, 10f * DeltaTime);
         }

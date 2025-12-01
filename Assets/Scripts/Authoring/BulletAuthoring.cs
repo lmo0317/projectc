@@ -23,7 +23,13 @@ public class BulletAuthoring : MonoBehaviour
             AddComponent(entity, new BulletDirection { Value = float3.zero }); // 발사 시 설정됨
             AddComponent(entity, new DamageValue { Value = authoring.Damage }); // 데미지 추가
 
-            // PhysicsCollider 추가 (Sphere)
+            // PhysicsCollider 추가 (Sphere) - Trigger로 설정
+            // Material에 RaiseTriggerEvents 설정
+            var material = new Unity.Physics.Material
+            {
+                CollisionResponse = CollisionResponsePolicy.RaiseTriggerEvents
+            };
+
             var collider = Unity.Physics.SphereCollider.Create(
                 new SphereGeometry
                 {
@@ -33,9 +39,12 @@ public class BulletAuthoring : MonoBehaviour
                 new CollisionFilter
                 {
                     BelongsTo = 1u << 1,    // Layer 1: Bullet
-                    CollidesWith = 1u << 2  // Layer 2: Enemy만 충돌
-                }
+                    CollidesWith = 1u << 2, // Layer 2: Enemy만 충돌
+                    GroupIndex = 0
+                },
+                material
             );
+
             AddComponent(entity, new PhysicsCollider { Value = collider });
         }
     }

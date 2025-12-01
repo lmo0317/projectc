@@ -33,7 +33,7 @@ public partial struct BulletMovementJob : IJobEntity
 
     void Execute(ref LocalTransform transform, in BulletDirection direction, in BulletSpeed speed)
     {
-        // 방향 * 속도 * 시간 = 이동량
+        // Transform 직접 수정 방식으로 복구
         float3 movement = direction.Value * speed.Value * DeltaTime;
         transform.Position += movement;
     }

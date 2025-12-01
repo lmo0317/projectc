@@ -20,7 +20,13 @@ public class EnemyAuthoring : MonoBehaviour
             AddComponent(entity, new EnemyHealth { Value = authoring.Health });
             AddComponent(entity, new EnemySpeed { Value = authoring.Speed });
 
-            // PhysicsCollider 추가 (Sphere)
+            // PhysicsCollider 추가 (Sphere) - Trigger로 설정
+            // Material에 RaiseTriggerEvents 설정
+            var material = new Unity.Physics.Material
+            {
+                CollisionResponse = CollisionResponsePolicy.RaiseTriggerEvents
+            };
+
             var collider = Unity.Physics.SphereCollider.Create(
                 new SphereGeometry
                 {
@@ -30,9 +36,12 @@ public class EnemyAuthoring : MonoBehaviour
                 new CollisionFilter
                 {
                     BelongsTo = 1u << 2,    // Layer 2: Enemy
-                    CollidesWith = (1u << 0) | (1u << 1) // Layer 0: Player, Layer 1: Bullet
-                }
+                    CollidesWith = (1u << 0) | (1u << 1), // Layer 0: Player, Layer 1: Bullet
+                    GroupIndex = 0
+                },
+                material
             );
+
             AddComponent(entity, new PhysicsCollider { Value = collider });
         }
     }
