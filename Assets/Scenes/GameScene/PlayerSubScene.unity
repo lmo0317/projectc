@@ -359,6 +359,7 @@ MonoBehaviour:
   FireRate: 0.5
   BulletPrefab: {fileID: 5995108716016775410, guid: 56ac3d9a37a33464b9fc564041cb3bfd, type: 3}
   ColliderRadius: 0.5
+  MaxHealth: 100
 --- !u!4 &3902148826936318980
 Transform:
   m_ObjectHideFlags: 0

@@ -8,6 +8,7 @@ public class BulletAuthoring : MonoBehaviour
     public float Speed = 10f;
     public float Lifetime = 5f;
     public float ColliderRadius = 0.2f; // 총알 충돌 반경
+    public float Damage = 25f; // 데미지 값
 
     class Baker : Baker<BulletAuthoring>
     {
@@ -20,6 +21,7 @@ public class BulletAuthoring : MonoBehaviour
             AddComponent(entity, new BulletSpeed { Value = authoring.Speed });
             AddComponent(entity, new BulletLifetime { RemainingTime = authoring.Lifetime });
             AddComponent(entity, new BulletDirection { Value = float3.zero }); // 발사 시 설정됨
+            AddComponent(entity, new DamageValue { Value = authoring.Damage }); // 데미지 추가
 
             // PhysicsCollider 추가 (Sphere)
             var collider = Unity.Physics.SphereCollider.Create(

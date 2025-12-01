@@ -9,6 +9,7 @@ public class PlayerAuthoring : MonoBehaviour
     public float FireRate = 0.5f;  // 초당 2발
     public GameObject BulletPrefab; // Inspector에서 할당
     public float ColliderRadius = 0.5f; // 플레이어 충돌 반경
+    public float MaxHealth = 100f; // 최대 체력
 
     class Baker : Baker<PlayerAuthoring>
     {
@@ -20,6 +21,11 @@ public class PlayerAuthoring : MonoBehaviour
             AddComponent(entity, new PlayerTag());
             AddComponent(entity, new MovementSpeed { Value = authoring.MoveSpeed });
             AddComponent(entity, new PlayerInput { Movement = float2.zero });
+            AddComponent(entity, new PlayerHealth
+            {
+                CurrentHealth = authoring.MaxHealth,
+                MaxHealth = authoring.MaxHealth
+            }); // 체력 추가
 
             // 총알 Prefab Entity 참조 가져오기
             var bulletPrefabEntity = GetEntity(authoring.BulletPrefab, TransformUsageFlags.Dynamic);
