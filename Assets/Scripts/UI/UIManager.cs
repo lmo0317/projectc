@@ -1,0 +1,69 @@
+using TMPro;
+using UnityEngine;
+
+/// <summary>
+/// UI 텍스트 참조 관리 (MonoBehaviour)
+/// </summary>
+public class UIManager : MonoBehaviour
+{
+    [Header("HUD Text References")]
+    public TextMeshProUGUI HealthText;
+    public TextMeshProUGUI SurvivalTimeText;
+    public TextMeshProUGUI KillCountText;
+
+    [Header("Game Over UI")]
+    public GameObject GameOverPanel;
+    public TextMeshProUGUI FinalStatsText;
+
+    private void Awake()
+    {
+        // 게임 오버 패널 초기 비활성화
+        if (GameOverPanel != null)
+        {
+            GameOverPanel.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// HUD 텍스트 업데이트
+    /// </summary>
+    public void UpdateHealth(float current, float max)
+    {
+        if (HealthText != null)
+        {
+            HealthText.text = $"Health: {current:F0} / {max:F0}";
+        }
+    }
+
+    public void UpdateSurvivalTime(float time)
+    {
+        if (SurvivalTimeText != null)
+        {
+            SurvivalTimeText.text = $"Time: {time:F1}s";
+        }
+    }
+
+    public void UpdateKillCount(int kills)
+    {
+        if (KillCountText != null)
+        {
+            KillCountText.text = $"Kills: {kills}";
+        }
+    }
+
+    /// <summary>
+    /// 게임 오버 UI 표시
+    /// </summary>
+    public void ShowGameOver(float survivalTime, int killCount)
+    {
+        if (GameOverPanel != null)
+        {
+            GameOverPanel.SetActive(true);
+
+            if (FinalStatsText != null)
+            {
+                FinalStatsText.text = $"Game Over!\n\nSurvival Time: {survivalTime:F1}s\nKills: {killCount}";
+            }
+        }
+    }
+}
