@@ -53,6 +53,13 @@ public partial struct BulletHitSystem : ISystem
                     if (enemyHealth.ValueRO.Value <= 0)
                     {
                         ecb.DestroyEntity(enemyEntity);
+
+                        // 처치 카운트 증가
+                        foreach (var stats in SystemAPI.Query<RefRW<GameStats>>())
+                        {
+                            stats.ValueRW.KillCount++;
+                            break; // 싱글톤
+                        }
                     }
 
                     // 총알 삭제
