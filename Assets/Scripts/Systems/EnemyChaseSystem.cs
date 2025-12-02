@@ -1,8 +1,14 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+/// <summary>
+/// Enemy가 플레이어를 추적하면서 서로 겹치지 않도록 하는 시스템
+/// - 플레이어 추적 (Chase)
+/// - Enemy 간 충돌 회피 (Separation)
+/// </summary>
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(EnemySpawnSystem))]
 [BurstCompile]
@@ -29,12 +35,32 @@ public partial struct EnemyChaseSystem : ISystem
             break; // 플레이어는 1명이므로 첫 번째만
         }
 
-        // 모든 몬스터를 병렬로 처리
+        // 1단계: 모든 Enemy의 위치를 수집
+        var enemyQuery = SystemAPI.QueryBuilder().WithAll<EnemyTag, LocalTransform>().Build();
+        int enemyCount = enemyQuery.CalculateEntityCount();
+
+        if (enemyCount == 0) return;
+
+        var enemyPositions = new NativeArray<float3>(enemyCount, Allocator.TempJob);
+
+        int index = 0;
+        foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<EnemyTag>())
+        {
+            enemyPositions[index] = transform.ValueRO.Position;
+            index++;
+        }
+
+        // 2단계: 플레이어 추적 + 충돌 회피 로직 실행
         new EnemyChaseJob
         {
             PlayerPosition = playerPosition,
-            DeltaTime = deltaTime
+            DeltaTime = deltaTime,
+            AllEnemyPositions = enemyPositions
         }.ScheduleParallel();
+
+        // 3단계: Job 완료 후 NativeArray 정리
+        state.Dependency.Complete();
+        enemyPositions.Dispose();
     }
 }
 
@@ -43,21 +69,65 @@ public partial struct EnemyChaseJob : IJobEntity
 {
     public float3 PlayerPosition;
     public float DeltaTime;
+    [ReadOnly] public NativeArray<float3> AllEnemyPositions;
 
     void Execute(ref LocalTransform transform, in EnemySpeed speed)
     {
-        // Transform 직접 수정 방식으로 복구
-        float3 direction = PlayerPosition - transform.Position;
-        direction.y = 0;
+        float3 currentPosition = transform.Position;
 
-        float distanceSq = math.lengthsq(direction);
+        // 1. 플레이어를 향하는 방향 계산
+        float3 chaseDirection = PlayerPosition - currentPosition;
+        chaseDirection.y = 0;
+
+        // 2. 다른 Enemy들로부터 떨어지는 방향 계산 (Separation)
+        float3 separationDirection = float3.zero;
+        float separationRadius = 1.0f; // 충돌 회피 반경 (Enemy 간 최소 거리)
+        int nearbyCount = 0;
+
+        for (int i = 0; i < AllEnemyPositions.Length; i++)
+        {
+            float3 otherPosition = AllEnemyPositions[i];
+
+            // 자기 자신은 제외
+            if (math.distancesq(currentPosition, otherPosition) < 0.01f)
+                continue;
+
+            float distance = math.distance(currentPosition, otherPosition);
+
+            // 일정 반경 내의 다른 Enemy가 있으면 분리 힘 적용
+            if (distance < separationRadius)
+            {
+                // 다른 Enemy로부터 멀어지는 방향
+                float3 awayDirection = currentPosition - otherPosition;
+                awayDirection.y = 0;
+
+                // 거리가 가까울수록 강한 분리 힘
+                float strength = 1.0f - (distance / separationRadius);
+                separationDirection += math.normalize(awayDirection) * strength;
+                nearbyCount++;
+            }
+        }
+
+        // 평균 분리 방향 계산
+        if (nearbyCount > 0)
+        {
+            separationDirection /= nearbyCount;
+        }
+
+        // 3. 최종 이동 방향 = 추적 방향 + 분리 방향
+        // separationDirection에 가중치를 높여서 충돌 회피 우선
+        float3 finalDirection = chaseDirection + separationDirection * 2.5f;
+        finalDirection.y = 0;
+
+        float distanceSq = math.lengthsq(finalDirection);
 
         if (distanceSq > 0.01f)
         {
-            float3 normalizedDirection = math.normalize(direction);
+            float3 normalizedDirection = math.normalize(finalDirection);
             float3 movement = normalizedDirection * speed.Value * DeltaTime;
             transform.Position += movement;
 
+            // 이동 방향으로 회전
             quaternion targetRotation = quaternion.LookRotationSafe(normalizedDirection, math.up());
             transform.Rotation = math.slerp(transform.Rotation, targetRotation, 10f * DeltaTime);
         }
