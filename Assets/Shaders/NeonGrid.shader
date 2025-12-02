@@ -9,15 +9,16 @@ Shader "Custom/NeonGrid"
         _GlowIntensity ("Glow Intensity", Range(0, 5)) = 2.0
         _FadeDistance ("Fade Distance", Float) = 50.0
         _EmissionStrength ("Emission Strength", Range(0, 10)) = 3.0
+        _Transparency ("Transparency", Range(0, 1)) = 0.3 // 투명도 (0 = 투명, 1 = 불투명)
     }
 
     SubShader
     {
         Tags
         {
-            "RenderType" = "Opaque"
+            "RenderType" = "Transparent"
             "RenderPipeline" = "UniversalPipeline"
-            "Queue" = "Geometry"
+            "Queue" = "Transparent"
         }
         LOD 100
 
@@ -25,6 +26,11 @@ Shader "Custom/NeonGrid"
         {
             Name "ForwardLit"
             Tags { "LightMode" = "UniversalForward" }
+
+            // 반투명 블렌딩 설정
+            Blend SrcAlpha OneMinusSrcAlpha
+            ZWrite Off
+            Cull Back
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -60,6 +66,7 @@ Shader "Custom/NeonGrid"
                 float _GlowIntensity;
                 float _FadeDistance;
                 float _EmissionStrength;
+                float _Transparency;
             CBUFFER_END
 
             Varyings vert(Attributes input)
@@ -111,8 +118,12 @@ Shader "Custom/NeonGrid"
                 half3 emission = _GridColor.rgb * glow * _EmissionStrength;
                 color += emission;
 
-                // 최종 색상
-                half4 finalColor = half4(color, 1.0);
+                // 투명도 계산 (그리드 라인은 더 불투명, 배경은 더 투명)
+                float alpha = lerp(_Transparency * 0.3, _Transparency, grid);
+                alpha *= fade; // 거리에 따라 투명도 증가
+
+                // 최종 색상 (Alpha 포함)
+                half4 finalColor = half4(color, alpha);
 
                 // Fog 적용
                 finalColor.rgb = MixFog(finalColor.rgb, input.fogFactor);

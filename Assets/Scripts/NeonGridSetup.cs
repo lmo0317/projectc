@@ -35,6 +35,7 @@ public class NeonGridSetup : MonoBehaviour
         neonMaterial.SetFloat("_GlowIntensity", 2.0f); // 글로우 강도
         neonMaterial.SetFloat("_FadeDistance", 50.0f); // 50 유닛 거리에서 페이드
         neonMaterial.SetFloat("_EmissionStrength", 3.0f); // Emission 강도
+        neonMaterial.SetFloat("_Transparency", 0.3f); // 투명도 (0.3 = 희미함)
 
         // 4. Material을 Assets에 저장
         string materialPath = "Assets/Materials/NeonGridMaterial.mat";
@@ -75,6 +76,7 @@ public class NeonGridSetup : MonoBehaviour
         neonMaterial.SetFloat("_GlowIntensity", 2.0f);
         neonMaterial.SetFloat("_FadeDistance", 50.0f);
         neonMaterial.SetFloat("_EmissionStrength", 3.0f);
+        neonMaterial.SetFloat("_Transparency", 0.3f);
 
         string materialPath = "Assets/Materials/NeonGridMaterial.mat";
         UnityEditor.AssetDatabase.CreateAsset(neonMaterial, materialPath);
