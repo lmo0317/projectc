@@ -18,6 +18,10 @@ public partial struct AutoShootSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 게임 오버 시 발사 중지
+        if (SystemAPI.HasSingleton<GameOverTag>())
+            return;
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();

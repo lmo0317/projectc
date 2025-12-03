@@ -19,6 +19,10 @@ public partial struct EnemySpawnSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 게임 오버 시 스폰 중지
+        if (SystemAPI.HasSingleton<GameOverTag>())
+            return;
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         // EntityCommandBuffer 생성
