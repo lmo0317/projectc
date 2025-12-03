@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// UI 텍스트 참조 관리 (MonoBehaviour)
@@ -15,12 +16,34 @@ public class UIManager : MonoBehaviour
     public GameObject GameOverPanel;
     public TextMeshProUGUI FinalStatsText;
 
+    [Header("Restart")]
+    public Button RestartButton;
+
     private void Awake()
     {
         // 게임 오버 패널 초기 비활성화
         if (GameOverPanel != null)
         {
             GameOverPanel.SetActive(false);
+        }
+
+        // 재시작 버튼 이벤트 연결
+        if (RestartButton != null)
+        {
+            RestartButton.onClick.AddListener(OnRestartButtonClicked);
+        }
+    }
+
+    private void OnRestartButtonClicked()
+    {
+        var restartManager = GetComponent<GameRestartManager>();
+        if (restartManager != null)
+        {
+            restartManager.RestartGame();
+        }
+        else
+        {
+            Debug.LogWarning("GameRestartManager not found on GameUI!");
         }
     }
 
