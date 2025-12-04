@@ -39,14 +39,44 @@ public partial struct AutoShootSystem : ISystem
             {
                 shootConfig.ValueRW.TimeSinceLastShot = 0f;
 
+                // === 타겟팅 로직 시작 ===
+                const float MAX_TARGETING_RANGE = 20f;
+                float3 playerPos = transform.ValueRO.Position;
+                float3 targetDirection = float3.zero;
+                bool targetFound = false;
+                float closestDistance = float.MaxValue;
+
+                // 모든 적 탐색
+                foreach (var enemyTransform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<EnemyTag>())
+                {
+                    float3 enemyPos = enemyTransform.ValueRO.Position;
+                    float distance = math.distance(playerPos, enemyPos);
+
+                    // 범위 내 + 가장 가까운 적 찾기
+                    if (distance <= MAX_TARGETING_RANGE && distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        targetDirection = math.normalize(enemyPos - playerPos);
+                        targetFound = true;
+                    }
+                }
+
+                // 타겟 없으면 플레이어가 바라보는 방향
+                if (!targetFound)
+                {
+                    // 플레이어의 Forward 방향 추출
+                    targetDirection = math.mul(transform.ValueRO.Rotation, new float3(0, 0, 1));
+                }
+                // === 타겟팅 로직 끝 ===
+
                 // 총알 Entity 생성
                 var bulletEntity = ecb.Instantiate(shootConfig.ValueRW.BulletPrefab);
 
                 // 총알 위치 설정 (플레이어 위치)
-                ecb.SetComponent(bulletEntity, LocalTransform.FromPosition(transform.ValueRO.Position));
+                ecb.SetComponent(bulletEntity, LocalTransform.FromPosition(playerPos));
 
-                // 총알 발사 방향 설정 (초기에는 위쪽 고정: +Z)
-                ecb.SetComponent(bulletEntity, new BulletDirection { Value = new float3(0, 0, 1) });
+                // 총알 발사 방향 설정 (타겟팅 적용)
+                ecb.SetComponent(bulletEntity, new BulletDirection { Value = targetDirection });
             }
         }
     }

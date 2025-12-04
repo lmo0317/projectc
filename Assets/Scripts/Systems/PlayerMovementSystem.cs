@@ -38,11 +38,16 @@ public partial struct PlayerMovementJob : IJobEntity
             // 입력 방향 정규화
             float2 direction = math.normalize(input.Movement);
 
-            // 3D 공간 이동 (XZ 평면)
-            float3 movement = new float3(direction.x, 0, direction.y) * speed.Value * DeltaTime;
+            // 3D 공간 이동 방향 (XZ 평면)
+            float3 moveDirection = new float3(direction.x, 0, direction.y);
 
             // Transform 위치 업데이트
+            float3 movement = moveDirection * speed.Value * DeltaTime;
             transform.Position += movement;
+
+            // 이동 방향으로 즉시 회전
+            quaternion targetRotation = quaternion.LookRotationSafe(moveDirection, math.up());
+            transform.Rotation = targetRotation;
         }
     }
 }
