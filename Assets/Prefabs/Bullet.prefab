@@ -120,6 +120,18 @@ PrefabInstance:
       value: BoneMissile
       objectReference: {fileID: 0}
     - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -133,19 +145,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071068
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.7071068
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1419550303545798807, guid: f1f3bbac4cc8e2f4aa20c7e0e02ae392, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

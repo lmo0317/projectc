@@ -33,8 +33,15 @@ public partial struct BulletMovementJob : IJobEntity
 
     void Execute(ref LocalTransform transform, in BulletDirection direction, in BulletSpeed speed)
     {
-        // Transform 직접 수정 방식으로 복구
+        // 이동 처리
         float3 movement = direction.Value * speed.Value * DeltaTime;
         transform.Position += movement;
+
+        // 날아가는 방향으로 회전
+        if (math.lengthsq(direction.Value) > 0.001f)
+        {
+            quaternion targetRotation = quaternion.LookRotationSafe(direction.Value, math.up());
+            transform.Rotation = targetRotation;
+        }
     }
 }

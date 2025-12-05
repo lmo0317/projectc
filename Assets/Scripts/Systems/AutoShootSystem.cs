@@ -72,8 +72,11 @@ public partial struct AutoShootSystem : ISystem
                 // 총알 Entity 생성
                 var bulletEntity = ecb.Instantiate(shootConfig.ValueRW.BulletPrefab);
 
-                // 총알 위치 설정 (플레이어 위치)
-                ecb.SetComponent(bulletEntity, LocalTransform.FromPosition(playerPos));
+                // 총알 방향에 맞는 회전값 계산
+                quaternion bulletRotation = quaternion.LookRotationSafe(targetDirection, math.up());
+
+                // 총알 위치와 회전 설정
+                ecb.SetComponent(bulletEntity, LocalTransform.FromPositionRotation(playerPos, bulletRotation));
 
                 // 총알 발사 방향 설정 (타겟팅 적용)
                 ecb.SetComponent(bulletEntity, new BulletDirection { Value = targetDirection });
