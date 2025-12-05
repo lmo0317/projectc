@@ -75,13 +75,18 @@ public partial struct EnemyChaseJob : IJobEntity
     {
         float3 currentPosition = transform.Position;
 
-        // 1. 플레이어를 향하는 방향 계산
+        // 1. 플레이어를 향하는 방향 계산 (정규화)
         float3 chaseDirection = PlayerPosition - currentPosition;
         chaseDirection.y = 0;
+        float3 normalizedChaseDirection = float3.zero;
+        if (math.lengthsq(chaseDirection) > 0.01f)
+        {
+            normalizedChaseDirection = math.normalize(chaseDirection);
+        }
 
         // 2. 다른 Enemy들로부터 떨어지는 방향 계산 (Separation)
         float3 separationDirection = float3.zero;
-        float separationRadius = 1.0f; // 충돌 회피 반경 (Enemy 간 최소 거리)
+        float separationRadius = 5.0f; // 충돌 회피 반경 증가 (Enemy 간 최소 거리)
         int nearbyCount = 0;
 
         for (int i = 0; i < AllEnemyPositions.Length; i++)
@@ -101,10 +106,15 @@ public partial struct EnemyChaseJob : IJobEntity
                 float3 awayDirection = currentPosition - otherPosition;
                 awayDirection.y = 0;
 
-                // 거리가 가까울수록 강한 분리 힘
+                // 거리가 가까울수록 강한 분리 힘 (제곱으로 증가)
                 float strength = 1.0f - (distance / separationRadius);
-                separationDirection += math.normalize(awayDirection) * strength;
-                nearbyCount++;
+                strength = strength * strength; // 가까울수록 훨씬 강한 힘
+
+                if (math.lengthsq(awayDirection) > 0.01f)
+                {
+                    separationDirection += math.normalize(awayDirection) * strength;
+                    nearbyCount++;
+                }
             }
         }
 
@@ -114,9 +124,9 @@ public partial struct EnemyChaseJob : IJobEntity
             separationDirection /= nearbyCount;
         }
 
-        // 3. 최종 이동 방향 = 추적 방향 + 분리 방향
-        // separationDirection에 가중치를 높여서 충돌 회피 우선
-        float3 finalDirection = chaseDirection + separationDirection * 2.5f;
+        // 3. 최종 이동 방향 = 추적 방향 + 분리 방향 (둘 다 정규화된 상태)
+        // separationDirection에 더 높은 가중치를 줘서 충돌 회피 우선
+        float3 finalDirection = normalizedChaseDirection + separationDirection * 5.0f;
         finalDirection.y = 0;
 
         float distanceSq = math.lengthsq(finalDirection);

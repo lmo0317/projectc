@@ -163,10 +163,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b4df617113964646b1f44bbcda5b500, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SpawnInterval: 2
+  SpawnInterval: 1
   EnemyPrefab: {fileID: 9063731474767392974, guid: 1a842a0deb4d71943a13418c26cd2a0f, type: 3}
   SpawnRadius: 10
-  MaxEnemies: 50
+  MaxEnemies: 1000
 --- !u!1 &1430080237
 GameObject:
   m_ObjectHideFlags: 0
@@ -288,7 +288,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1715056512
 Transform:
   m_ObjectHideFlags: 0
