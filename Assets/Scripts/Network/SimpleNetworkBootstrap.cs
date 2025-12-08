@@ -4,48 +4,35 @@ using Unity.Networking.Transport;
 using UnityEngine;
 
 /// <summary>
-/// 간단한 네트워크 연결 테스트용 Bootstrap
+/// Multiplayer Play Mode 호환 네트워크 부트스트랩
+/// ClientServerBootstrap 상속을 통해 자동 연결 지원
 /// </summary>
-public class SimpleNetworkBootstrap : MonoBehaviour
+[UnityEngine.Scripting.Preserve]
+public class SimpleNetworkBootstrap : ClientServerBootstrap
 {
-    public ushort Port = 7979;
-
-    void Start()
+    public override bool Initialize(string defaultWorldName)
     {
         // 백그라운드에서도 실행되도록 설정 (멀티플레이 필수)
         Application.runInBackground = true;
 
-        // Editor 환경 VSync 비활성화 (성능 향상)
-        QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = -1; // 무제한 (Editor 기본값)
+        // AutoConnectPort 설정으로 자동 연결 활성화
+        // 서버는 AutoConnectPort에서 리스닝, 클라이언트는 loopback:AutoConnectPort로 연결
+        AutoConnectPort = 7979;
 
-        // Server World 생성
-        var server = ClientServerBootstrap.CreateServerWorld("ServerWorld");
+        // 기본 클라이언트/서버 World 생성 (Multiplayer Play Mode 설정에 따라 결정됨)
+        CreateDefaultClientServerWorlds();
 
-        // Server World에 틱 레이트 설정
-        SetTickRate(server);
+        // 생성된 World에 Tick Rate 설정 추가
+        foreach (var world in World.All)
+        {
+            if (world.IsServer() || world.IsClient())
+            {
+                SetTickRate(world);
+            }
+        }
 
-        var serverEp = NetworkEndpoint.AnyIpv4.WithPort(Port);
-
-        // Server 리스닝 시작
-        var listenEntity = server.EntityManager.CreateEntity(typeof(NetworkStreamRequestListen));
-        server.EntityManager.SetComponentData(listenEntity, new NetworkStreamRequestListen { Endpoint = serverEp });
-
-        Debug.Log($"[Server] Listening on port {Port}");
-
-        // Client World 생성
-        var client = ClientServerBootstrap.CreateClientWorld("ClientWorld");
-
-        // Client World에 틱 레이트 설정
-        SetTickRate(client);
-
-        var clientEp = NetworkEndpoint.LoopbackIpv4.WithPort(Port);
-
-        // Server에 연결
-        var connectEntity = client.EntityManager.CreateEntity(typeof(NetworkStreamRequestConnect));
-        client.EntityManager.SetComponentData(connectEntity, new NetworkStreamRequestConnect { Endpoint = clientEp });
-
-        Debug.Log($"[Client] Connecting to 127.0.0.1:{Port}");
+        Debug.Log($"[SimpleNetworkBootstrap] Initialized with AutoConnectPort={AutoConnectPort}");
+        return true;
     }
 
     private void SetTickRate(World world)
