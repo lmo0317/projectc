@@ -1,5 +1,6 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Physics;
 using UnityEngine;
 
@@ -17,6 +18,10 @@ public class PlayerAuthoring : MonoBehaviour
         {
             // Renderable | Dynamic: 렌더링되면서 움직이는 Entity
             var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
+
+            // Ghost 네트워크 동기화를 위한 컴포넌트 추가
+            // 이 Entity가 네트워크로 복제되도록 설정
+            // (GhostAuthoringComponent 대신 Baker에서 직접 추가 가능)
 
             AddComponent(entity, new PlayerTag());
             AddComponent(entity, new MovementSpeed { Value = authoring.MoveSpeed });

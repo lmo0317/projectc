@@ -17,7 +17,7 @@ public class SimpleNetworkBootstrap : MonoBehaviour
 
         // Editor 환경 VSync 비활성화 (성능 향상)
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 30; // 30 FPS로 제한 (경고 방지)
+        Application.targetFrameRate = -1; // 무제한 (Editor 기본값)
 
         // Server World 생성
         var server = ClientServerBootstrap.CreateServerWorld("ServerWorld");
@@ -55,11 +55,11 @@ public class SimpleNetworkBootstrap : MonoBehaviour
             var tickRateEntity = world.EntityManager.CreateEntity(typeof(ClientServerTickRate));
             world.EntityManager.SetComponentData(tickRateEntity, new ClientServerTickRate
             {
-                // Editor에서 경고 방지를 위해 30Hz로 낮춤 (빌드에서는 60Hz 사용 가능)
-                SimulationTickRate = 30,
-                NetworkTickRate = 30,
-                MaxSimulationStepsPerFrame = 4,
-                TargetFrameRateMode = ClientServerTickRate.FrameRateMode.Auto
+                // Editor에서는 성능 경고가 자주 발생하므로 낮은 틱 레이트 사용
+                SimulationTickRate = 20,  // 20Hz로 낮춤
+                NetworkTickRate = 20,      // 20Hz로 낮춤
+                MaxSimulationStepsPerFrame = 8,  // 더 많은 보정 허용
+                TargetFrameRateMode = ClientServerTickRate.FrameRateMode.Sleep
             });
         }
     }

@@ -18,14 +18,14 @@ public partial class PlayerSpawnSystem : SystemBase
     protected override void OnCreate()
     {
         RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
+        Debug.Log("[PlayerSpawnSystem] OnCreate - System initialized in ServerWorld");
     }
 
     protected override void OnUpdate()
     {
-        // Prefab 찾기 (처음 한 번만)
+        // Prefab 찾기 (매 프레임마다 시도 - SubScene이 로드될 때까지)
         if (m_PlayerPrefab == Entity.Null)
         {
-            // PlayerTag를 가진 Entity 찾기
             var query = EntityManager.CreateEntityQuery(typeof(PlayerTag), typeof(Prefab));
             var prefabs = query.ToEntityArray(Unity.Collections.Allocator.Temp);
 
@@ -34,15 +34,11 @@ public partial class PlayerSpawnSystem : SystemBase
                 m_PlayerPrefab = prefabs[0];
                 Debug.Log($"[PlayerSpawnSystem] Found PlayerPrefab: {m_PlayerPrefab}");
             }
-            else
-            {
-                Debug.LogWarning("[PlayerSpawnSystem] PlayerPrefab not found! Make sure PlayerPrefab has PlayerTag and is in the scene.");
-            }
 
             prefabs.Dispose();
 
             if (m_PlayerPrefab == Entity.Null)
-                return;
+                return; // 아직 SubScene이 로드되지 않음
         }
 
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
@@ -53,6 +49,8 @@ public partial class PlayerSpawnSystem : SystemBase
                      .WithNone<NetworkStreamInGame>()
                      .WithEntityAccess())
         {
+            Debug.Log($"[PlayerSpawnSystem] Client connected: NetworkId = {id.ValueRO.Value}");
+
             // InGame 태그 추가 (스폰 완료 표시)
             ecb.AddComponent<NetworkStreamInGame>(entity);
 
@@ -60,10 +58,8 @@ public partial class PlayerSpawnSystem : SystemBase
             var player = ecb.Instantiate(m_PlayerPrefab);
 
             // 스폰 위치 설정 (2명이므로 좌/우 배치)
-            // NetworkId는 1부터 시작하므로 -1 해서 0, 1로 만듦
             int playerIndex = id.ValueRO.Value - 1;
             float3 spawnPosition = new float3(playerIndex * 4f - 2f, 0.5f, 0f);
-            // Player 0: x=-2, Player 1: x=2
 
             ecb.SetComponent(player, LocalTransform.FromPosition(spawnPosition));
 

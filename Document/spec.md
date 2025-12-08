@@ -355,3 +355,152 @@ Unity DOTS 프로젝트의 기초 환경을 구축하고, ECS 기반의 플레�
 ---
 
 이 PRD는 점진적으로 기능을 구축하며 각 단계에서 실행 가능한 결과물을 만들 수 있도록 설계되었습니다. Claude Code 에이전트는 각 Phase를 독립적으로 수행하며, 이전 Phase의 결과물을 기반으로 작업을 이어갈 수 있습니다.
+
+---
+
+## ⚠️ Claude Code 작업 시 필수 준수 사항 (매우 중요!)
+
+### 1. API 사용 전 검증 원칙
+**절대 API를 추측해서 사용하지 말 것!**
+
+- ❌ **금지**: 메서드나 프로퍼티 이름을 추측해서 코드 작성
+- ❌ **금지**: "이 정도면 있을 것 같다"는 가정으로 API 사용
+- ✅ **필수**: Unity/Netcode 공식 문서를 먼저 확인
+- ✅ **필수**: WebSearch 도구를 활용하여 정확한 API 사용법 조사
+- ✅ **필수**: 확실하지 않으면 사용자에게 질문
+
+**나쁜 예시들 (실제 발생한 오류):**
+```csharp
+// ❌ 존재하지 않는 메서드 호출
+NetDebug.SuppressTickBatchingWarning();
+
+// ❌ 인스턴스 프로퍼티를 static처럼 사용
+NetDebug.SuppressApplicationRunInBackgroundWarning = true;
+
+// ❌ 존재하지 않는 프로퍼티 접근
+var prefab = Prefab.Value;  // Prefab에는 Value 프로퍼티 없음
+
+// ❌ 제거된 API 사용
+GameObjectConversionSettings settings = ...;  // Unity Entities 1.x에서 제거됨
+```
+
+### 2. 작업 완료 선언 기준
+**"완료했습니다"라고 말하기 전에 반드시 확인할 것!**
+
+다음을 **모두** 확인한 후에만 완료 선언:
+- [ ] 작성한 코드에 컴파일 에러 가능성이 없는가?
+- [ ] 사용한 모든 API가 실제로 존재하고 올바르게 사용했는가?
+- [ ] 타입이 맞는가? (static vs instance, 메서드 vs 프로퍼티)
+- [ ] 런타임 에러 가능성은 없는가?
+- [ ] 이전에 비슷한 에러를 낸 적이 있다면, 같은 실수를 반복하지 않았는가?
+
+**절대 하지 말아야 할 것:**
+- ❌ 코드를 작성하고 검증 없이 "완료했습니다" 선언
+- ❌ 에러가 발생할 것 같지만 "아마 괜찮을 것"이라고 가정
+- ❌ 사용자가 테스트하면서 에러를 발견하게 만드는 것
+
+### 3. 에러 발생 시 대응 프로토콜
+
+**사용자가 같은 문제를 2번 이상 보고하면, 이전 해결책이 틀렸다는 의미!**
+
+에러 발생 시 절차:
+1. **에러 메시지 정확히 분석**
+   - 단순히 증상만 보지 말고 **근본 원인** 파악
+   - 왜 이 에러가 발생했는지 이해
+
+2. **올바른 해결책 조사**
+   - Unity/Netcode 공식 문서 확인
+   - 같은 문제를 겪은 사례 검색 (WebSearch 활용)
+   - 비슷한 메서드/프로퍼티가 있는지 확인
+
+3. **한 번에 완전히 수정**
+   - 임시방편 금지 - **근본적인 해결**만 시도
+   - 수정 후 다른 부작용이 없는지 검토
+   - 같은 에러가 다시 발생하지 않도록 보장
+
+4. **반복 실패 시 방향 전환**
+   - 같은 방법으로 2번 이상 실패했다면 **완전히 다른 접근법** 고려
+   - "좀 더 수정해보면 될 것 같다"는 생각 금지
+   - 원점으로 돌아가서 다시 생각
+
+### 4. Unity Netcode for Entities 특수 사항
+
+**경고(Warning)와 에러(Error) 구분:**
+- **Warning**: 기능에 영향 없으면 무시 가능 (사용자에게 설명 후)
+  - 예: "Tick Batching Warning" - Editor에서만 나타나는 정상적인 경고
+  - 예: "Application.runInBackground" - `Application.runInBackground = true`로 간단히 해결
+
+- **Error**: 반드시 수정 필요
+  - 컴파일 에러는 절대 무시 불가
+  - API 사용 오류는 반드시 수정
+
+**Sub Scene과 Baking 시스템:**
+- Unity Entities 1.x는 GameObjectConversionSettings를 사용하지 않음
+- Entity Prefab은 Sub Scene에 배치하고 Baking으로 변환
+- `[GhostComponent]` 특성을 반드시 추가하여 네트워크 동기화 설정
+
+### 5. 작업 품질 원칙
+
+**"빠른 실패"보다 "정확한 성공"을 우선시**
+
+- ✅ **올바름**: 느리더라도 한 번에 정확하게 완료
+- ❌ **금지**: 빠르게 여러 번 시도하면서 사용자 시간 낭비
+
+**사용자 시간과 토큰 존중:**
+- 잘못된 방법으로 여러 번 시도하는 것은 시간과 토큰 낭비
+- 불확실하면 먼저 조사하고, 확신이 서면 구현
+- "일단 해보고 안 되면 고치자"는 접근 금지
+
+### 6. 패턴 학습 및 반복 방지
+
+**이전 실수에서 배우기:**
+- 같은 타입의 에러를 2번 이상 반복하지 않기
+- 예: static vs instance 혼동 → 다음부터는 반드시 확인
+- 예: API 추측 실패 → 다음부터는 반드시 문서 확인
+
+**자주 발생하는 실수 패턴:**
+1. **타입 혼동**: static 메서드를 instance처럼, 또는 그 반대
+2. **API 추측**: 존재하지 않는 메서드/프로퍼티 사용
+3. **Deprecated API**: 옛날 버전 문서를 보고 제거된 API 사용
+4. **구조체 복사**: RefRW<T>.ValueRW를 변수에 할당 (값 복사 발생)
+
+---
+
+## Unity Netcode for Entities 관련 추가 지침
+
+### GhostComponent 설정
+모든 네트워크 동기화 컴포넌트는 `[GhostComponent]` 특성 필요:
+```csharp
+[GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
+public struct PlayerTag : IComponentData { }
+```
+
+### Entity Prefab 설정 방법
+1. Sub Scene에 GameObject로 Prefab 배치
+2. Authoring 컴포넌트 추가하여 Entity로 변환
+3. Unity가 자동으로 Baking하여 Entity Prefab 생성
+4. 시스템에서 `typeof(PlayerTag), typeof(Prefab)` 쿼리로 찾기
+
+### 네트워크 틱 레이트 설정
+```csharp
+var tickRateEntity = world.EntityManager.CreateEntity(typeof(ClientServerTickRate));
+world.EntityManager.SetComponentData(tickRateEntity, new ClientServerTickRate
+{
+    SimulationTickRate = 20,
+    NetworkTickRate = 20,
+    MaxSimulationStepsPerFrame = 8,
+    TargetFrameRateMode = ClientServerTickRate.FrameRateMode.Sleep
+});
+```
+
+### 일반적인 경고 처리
+- **"Server Tick Batching"**: Editor에서 정상적인 경고, 무시 가능
+- **"Application.runInBackground"**: `Application.runInBackground = true` 추가
+- **경고 억제 API**: NetDebug에는 경고 억제 메서드가 없음 - 억제하려 하지 말 것
+
+---
+
+**마지막 당부:**
+이 문서의 지침을 무시하고 작업하면 사용자의 시간과 토큰을 낭비하게 됩니다.
+불확실한 것이 있으면 **추측하지 말고 조사하거나 질문**하세요.
+"완료했습니다"는 **정말로 완료했을 때만** 말하세요.
