@@ -1,0 +1,13 @@
+
+=== Tue Dec  9 15:42:33 2025
+
+Packages were changed.
+Update Mode: updateDependencies
+
+The following packages were added:
+  com.unity.modules.adaptiveperformance@1.0.0
+  com.unity.modules.vectorgraphics@1.0.0
+The following packages were updated:
+  com.unity.netcode from version 1.9.1 to 1.9.3
+  com.unity.render-pipelines.universal from version 17.2.0 to 17.3.0
+  com.unity.services.multiplayer from version 1.2.0 to 2.0.0
