@@ -25,7 +25,10 @@ public class PlayerAuthoring : MonoBehaviour
 
             AddComponent(entity, new PlayerTag());
             AddComponent(entity, new MovementSpeed { Value = authoring.MoveSpeed });
-            AddComponent(entity, new PlayerInput { Movement = float2.zero });
+
+            // PlayerInput 추가 (기본값으로 초기화)
+            AddComponent<PlayerInput>(entity);
+
             AddComponent(entity, new PlayerHealth
             {
                 CurrentHealth = authoring.MaxHealth,

@@ -33,21 +33,29 @@ public partial struct PlayerMovementJob : IJobEntity
 
     void Execute(ref LocalTransform transform, in PlayerInput input, in MovementSpeed speed)
     {
-        if (math.lengthsq(input.Movement) > 0.01f)
+        // int Horizontal/Vertical을 float3로 변환
+        if (input.Horizontal != 0 || input.Vertical != 0)
         {
-            // 입력 방향 정규화
-            float2 direction = math.normalize(input.Movement);
+            // 입력값을 float3로 변환 (XZ 평면)
+            float3 moveDirection = new float3(
+                input.Horizontal,
+                0,
+                input.Vertical
+            );
 
-            // 3D 공간 이동 방향 (XZ 평면)
-            float3 moveDirection = new float3(direction.x, 0, direction.y);
+            // 정규화하여 대각선 이동 속도 보정
+            moveDirection = math.normalizesafe(moveDirection);
 
             // Transform 위치 업데이트
             float3 movement = moveDirection * speed.Value * DeltaTime;
             transform.Position += movement;
 
             // 이동 방향으로 즉시 회전
-            quaternion targetRotation = quaternion.LookRotationSafe(moveDirection, math.up());
-            transform.Rotation = targetRotation;
+            if (math.lengthsq(moveDirection) > 0.01f)
+            {
+                quaternion targetRotation = quaternion.LookRotationSafe(moveDirection, math.up());
+                transform.Rotation = targetRotation;
+            }
         }
     }
 }

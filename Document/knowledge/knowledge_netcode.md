@@ -3,13 +3,14 @@
 ## 목차
 1. [NetworkStreamInGame의 핵심 역할](#networkstreamingame의-핵심-역할)
 2. [GoInGameSystem - 네트워크 동기화의 시작점](#goingamesystem---네트워크-동기화의-시작점)
-3. [Spawner Singleton 패턴](#spawner-singleton-패턴)
-4. [플레이어 스폰의 7단계](#플레이어-스폰의-7단계)
-5. [네트워크 연결 상태 흐름도](#네트워크-연결-상태-흐름도)
-6. [GhostAuthoringComponent와 prefabId](#ghostauthoringcomponent와-prefabid)
-7. [RequireForUpdate vs WithAll 구분](#requireforupdate-vs-withall-구분)
-8. [문제 해결 사례](#문제-해결-사례)
-9. [디버깅 체크리스트](#디버깅-체크리스트)
+3. [IInputComponentData - 네트워크 입력 시스템](#iinputcomponentdata---네트워크-입력-시스템)
+4. [Spawner Singleton 패턴](#spawner-singleton-패턴)
+5. [플레이어 스폰의 7단계](#플레이어-스폰의-7단계)
+6. [네트워크 연결 상태 흐름도](#네트워크-연결-상태-흐름도)
+7. [GhostAuthoringComponent와 prefabId](#ghostauthoringcomponent와-prefabid)
+8. [RequireForUpdate vs WithAll 구분](#requireforupdate-vs-withall-구분)
+9. [문제 해결 사례](#문제-해결-사례)
+10. [디버깅 체크리스트](#디버깅-체크리스트)
 
 ---
 
@@ -127,6 +128,99 @@ public partial class GoInGameSystem : SystemBase
    ```
    - 이미 InGame 상태인 연결은 건너뜀
    - 중복 처리 방지
+
+---
+
+## IInputComponentData - 네트워크 입력 시스템
+
+### 핵심 개념
+
+**IInputComponentData는 네트워크 입력 전용 인터페이스로, 자동 직렬화 및 입력 버퍼를 제공합니다.**
+
+```csharp
+// ❌ 잘못됨
+public struct PlayerInput : IComponentData
+{
+    public float2 Movement;  // 수동 동기화 필요
+}
+
+// ✅ 올바름 (NetcodeSamples 패턴)
+public struct PlayerInput : IInputComponentData
+{
+    public int Horizontal;   // -1, 0, 1
+    public int Vertical;     // -1, 0, 1
+    public InputEvent Fire;  // 일회성 이벤트
+}
+```
+
+**왜 int를 사용하나?**
+- 네트워크 대역폭 절약 (int < float)
+- 입력은 방향만 필요 (-1, 0, 1)
+- NetcodeSamples 05_SpawnPlayer 패턴
+
+### InputEvent 사용법
+
+```csharp
+// 입력 설정
+if (Input.GetKeyDown(KeyCode.Space))
+    input.Fire.Set();
+
+// 입력 확인
+if (input.Fire.IsSet)
+    // 발사 처리
+```
+
+### 입력 시스템 패턴
+
+#### 1. 입력 수집 (GhostInputSystemGroup)
+
+```csharp
+[UpdateInGroup(typeof(GhostInputSystemGroup))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class GatherPlayerInputSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        foreach (var input in SystemAPI.Query<RefRW<PlayerInput>>()
+            .WithAll<GhostOwnerIsLocal>())  // 내 플레이어만
+        {
+            input.ValueRW = default;  // 매 프레임 초기화 필수!
+            if (Input.GetKey(KeyCode.A)) input.ValueRW.Horizontal -= 1;
+            if (Input.GetKey(KeyCode.D)) input.ValueRW.Horizontal += 1;
+            // ...
+        }
+    }
+}
+```
+
+#### 2. 입력 처리 (PredictedSimulationSystemGroup)
+
+```csharp
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+public partial struct ProcessPlayerInputSystem : ISystem
+{
+    public void OnUpdate(ref SystemState state)
+    {
+        foreach (var (input, transform) in SystemAPI.Query<RefRO<PlayerInput>, RefRW<LocalTransform>>()
+            .WithAll<Simulate>())
+        {
+            // int → float3 변환
+            float3 dir = new float3(input.ValueRO.Horizontal, 0, input.ValueRO.Vertical);
+            dir = math.normalizesafe(dir);  // 대각선 보정
+            transform.ValueRW.Position += dir * speed * deltaTime;
+        }
+    }
+}
+```
+
+### 핵심 규칙
+
+1. **매 프레임 초기화 필수**: `input.ValueRW = default;`
+2. **GhostOwnerIsLocal 필터링**: 내 플레이어만 입력 적용
+3. **Client에서만 수집**: `[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]`
+4. **올바른 시스템 그룹**:
+   - 입력 수집: `GhostInputSystemGroup`
+   - 입력 처리: `PredictedSimulationSystemGroup`
 
 ---
 
@@ -643,6 +737,13 @@ NetworkStreamInGame 태그 확인
 
 ---
 
+---
+
 **작성일**: 2025-12-10
+**최종 수정**: 2025-12-10 (Phase 3: IInputComponentData 추가)
 **프로젝트**: projectc (Unity Netcode for Entities)
 **참고**: NetcodeSamples 04_GoInGame, 05_SpawnPlayer
+
+### 버전 히스토리
+- **v1.0** (2025-12-10): 초기 작성 (NetworkStreamInGame, GoInGameSystem, Spawner 패턴)
+- **v1.1** (2025-12-10): IInputComponentData 섹션 추가 (Phase 3 완료)
