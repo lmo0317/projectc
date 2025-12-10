@@ -52,11 +52,8 @@ public partial struct ProcessPlayerInputSystem : ISystem
                 }
             }
 
-            // 발사 처리 (Phase 7에서 구현)
-            if (input.ValueRO.Fire.IsSet)
-            {
-                // TODO: 발사 로직
-            }
+            // 발사 처리는 AutoShootSystem에서 자동 처리
+            // PlayerInput.Fire는 수동 발사용으로 예약됨
         }
     }
 }
