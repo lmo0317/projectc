@@ -1,72 +1,75 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
 
 /// <summary>
-/// 클라이언트 연결 시 플레이어 스폰
+/// 클라이언트 연결 시 플레이어 스폰 (NetcodeSamples 05_SpawnPlayer 패턴)
 /// Server에서만 실행
 /// </summary>
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-public partial class PlayerSpawnSystem : SystemBase
+public partial struct PlayerSpawnSystem : ISystem
 {
-    private Entity m_PlayerPrefab;
+    private EntityQuery m_NewPlayersQuery;
 
-    protected override void OnCreate()
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
     {
-        RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
-        Debug.Log("[PlayerSpawnSystem] OnCreate - System initialized in ServerWorld");
+        // Spawner가 로드될 때까지 대기
+        state.RequireForUpdate<Spawner>();
+
+        // 새로운 플레이어 쿼리: PlayerSpawned 태그가 없는 연결
+        m_NewPlayersQuery = SystemAPI.QueryBuilder()
+            .WithAll<NetworkId>()
+            .WithNone<PlayerSpawned>()
+            .Build();
+
+        UnityEngine.Debug.Log("[PlayerSpawnSystem] OnCreate - Waiting for Spawner");
     }
 
-    protected override void OnUpdate()
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
     {
-        // Prefab 찾기 (매 프레임마다 시도 - SubScene이 로드될 때까지)
-        if (m_PlayerPrefab == Entity.Null)
+        // 새로운 플레이어가 없으면 리턴
+        if (m_NewPlayersQuery.IsEmptyIgnoreFilter)
+            return;
+
+        var prefab = SystemAPI.GetSingleton<Spawner>().Player;
+
+        // 새로 연결된 플레이어 스폰
+        var connectionEntities = m_NewPlayersQuery.ToEntityArray(Allocator.Temp);
+        var networkIds = m_NewPlayersQuery.ToComponentDataArray<NetworkId>(Allocator.Temp);
+
+        for (var i = 0; i < connectionEntities.Length; i++)
         {
-            var query = EntityManager.CreateEntityQuery(typeof(PlayerTag), typeof(Prefab));
-            var prefabs = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+            var networkId = networkIds[i];
+            var connectionEntity = connectionEntities[i];
+            var player = state.EntityManager.Instantiate(prefab);
 
-            if (prefabs.Length > 0)
-            {
-                m_PlayerPrefab = prefabs[0];
-                Debug.Log($"[PlayerSpawnSystem] Found PlayerPrefab: {m_PlayerPrefab}");
-            }
+            UnityEngine.Debug.Log($"[SpawnPlayerSystem][{state.WorldUnmanaged.Name}] Spawning player for NetworkId {networkId.Value}");
 
-            prefabs.Dispose();
+            // 스폰 위치 오프셋 (겹치지 않게)
+            var localTransform = state.EntityManager.GetComponentData<LocalTransform>(prefab);
+            localTransform.Position.x += networkId.Value * 2;
+            state.EntityManager.SetComponentData(player, localTransform);
 
-            if (m_PlayerPrefab == Entity.Null)
-                return; // 아직 SubScene이 로드되지 않음
-        }
+            // GhostOwner 설정 (네트워크 소유권)
+            state.EntityManager.SetComponentData(player, new GhostOwner { NetworkId = networkId.Value });
 
-        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                           .CreateCommandBuffer(World.Unmanaged);
+            // CommandTarget 설정 (입력 라우팅)
+            state.EntityManager.SetComponentData(connectionEntity, new CommandTarget { targetEntity = player });
 
-        // 연결된 클라이언트 중 플레이어가 없는 경우
-        foreach (var (id, entity) in SystemAPI.Query<RefRO<NetworkId>>()
-                     .WithNone<NetworkStreamInGame>()
-                     .WithEntityAccess())
-        {
-            Debug.Log($"[PlayerSpawnSystem] Client connected: NetworkId = {id.ValueRO.Value}");
+            // LinkedEntityGroup에 추가 (연결 끊김 시 자동 삭제)
+            state.EntityManager.GetBuffer<LinkedEntityGroup>(connectionEntity)
+                .Add(new LinkedEntityGroup { Value = player });
 
-            // InGame 태그 추가 (스폰 완료 표시)
-            ecb.AddComponent<NetworkStreamInGame>(entity);
+            // ConnectionOwner 추가 (역참조)
+            state.EntityManager.AddComponentData(player, new ConnectionOwner { Entity = connectionEntity });
 
-            // 플레이어 스폰
-            var player = ecb.Instantiate(m_PlayerPrefab);
-
-            // 스폰 위치 설정 (2명이므로 좌/우 배치)
-            int playerIndex = id.ValueRO.Value - 1;
-            float3 spawnPosition = new float3(playerIndex * 4f - 2f, 0.5f, 0f);
-
-            ecb.SetComponent(player, LocalTransform.FromPosition(spawnPosition));
-
-            // 소유권 설정
-            ecb.SetComponent(player, new GhostOwner { NetworkId = id.ValueRO.Value });
-
-            Debug.Log($"[Server] Player spawned for NetworkId {id.ValueRO.Value} at {spawnPosition}");
+            // PlayerSpawned 마커 추가 (중복 스폰 방지)
+            state.EntityManager.AddComponent<PlayerSpawned>(connectionEntity);
         }
     }
 }
