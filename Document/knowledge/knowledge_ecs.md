@@ -1,4 +1,4 @@
-# Unity DOTS 학습 노트
+# Unity DOTS ECS 학습 노트
 
 ## 목차
 1. [SystemGroup 실행 순서](#systemgroup-실행-순서)
@@ -8,6 +8,7 @@
 5. [Archetype과 Query 성능](#archetype과-query-성능)
 6. [IJobEntity의 Execute 자동 호출 메커니즘](#ijoventity의-execute-자동-호출-메커니즘)
 7. [Unity DOTS Physics와 충돌 처리](#unity-dots-physics와-충돌-처리)
+8. [EntityCommandBuffer (ECB)](#entitycommandbuffer-ecb)
 
 ---
 
@@ -527,22 +528,6 @@ QueryBuilder() 사용
 - Entity 개수 계산 시
 - 복잡한 필터링 필요 시
 - Query 재사용 시 (OnCreate에서 생성)
-
-**프로젝트 예시**:
-```csharp
-// AutoShootSystem - Query<>() 사용
-foreach (var (transform, config) in
-         SystemAPI.Query<RefRO<LocalTransform>, RefRW<AutoShootConfig>>())
-{
-    // 간단하므로 Query<> 충분
-}
-
-// BulletLifetimeSystem - QueryBuilder() 사용 (가정)
-var activeBullets = SystemAPI.QueryBuilder()
-    .WithAll<BulletTag>()
-    .WithNone<Prefab>()  // Prefab 제외 필요
-    .Build();
-```
 
 ---
 
@@ -1398,7 +1383,7 @@ Playback() - ECB 명령 실행
 
 ---
 
-## EntityCommandBuffer (ECB) - 지연된 구조적 변경
+## EntityCommandBuffer (ECB)
 
 Unity ECS에서 Entity의 구조를 안전하게 변경하기 위한 명령 버퍼 시스템입니다.
 
@@ -1487,143 +1472,6 @@ var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Single
 
 **핵심**: 명령은 다음 프레임 시작 시점에 실행됩니다!
 
-### 실전 예제
-
-#### 예제 1: GameOverSystem
-
-```csharp
-public partial class GameOverSystem : SystemBase
-{
-    protected override void OnUpdate()
-    {
-        // 1. ECB 생성
-        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                          .CreateCommandBuffer(World.Unmanaged);
-
-        foreach (var health in SystemAPI.Query<RefRO<PlayerHealth>>().WithAll<PlayerTag>())
-        {
-            if (health.ValueRO.CurrentHealth <= 0)
-            {
-                // 2. 명령 기록 (즉시 실행 안 됨)
-                Entity gameOverEntity = ecb.CreateEntity();
-                ecb.AddComponent(gameOverEntity, new GameOverTag());
-            }
-        }
-
-        // 3. 다음 프레임에 실행됨
-    }
-}
-```
-
-**타이밍**:
-```
-프레임 N (체력 0):
-  - GameOverSystem → ECB에 GameOverTag 생성 명령 기록
-  - EnemySpawnSystem → GameOverTag 아직 없음, 스폰 계속
-
-프레임 N+1:
-  - BeginSimulationECB.Playback() → GameOverTag 실제 생성! ✅
-  - EnemySpawnSystem → GameOverTag 감지, 스폰 중지
-```
-
-#### 예제 2: EnemySpawnSystem
-
-```csharp
-public void OnUpdate(ref SystemState state)
-{
-    // 게임 오버 체크 (이전 프레임에 생성된 Tag)
-    if (SystemAPI.HasSingleton<GameOverTag>())
-        return;
-
-    var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                      .CreateCommandBuffer(state.WorldUnmanaged);
-
-    // 몬스터 생성 명령
-    var enemy = ecb.Instantiate(enemyPrefab);
-    ecb.SetComponent(enemy, LocalTransform.FromPosition(...));
-}
-```
-
-### ECB로 생성한 Entity 사용
-
-#### ✅ 가능한 것: ECB 내부에서 추가 명령
-
-```csharp
-var ecb = ...;
-
-// Entity 생성
-var entity = ecb.Instantiate(prefab);
-
-// ✅ 같은 ECB에서 추가 명령 가능!
-ecb.SetComponent(entity, LocalTransform.FromPosition(new float3(1, 2, 3)));
-ecb.AddComponent(entity, new MyComponent { Value = 10 });
-
-// Playback 시 순서대로 실행: 1) 생성 → 2) SetComponent → 3) AddComponent
-```
-
-#### ❌ 불가능한 것: 즉시 데이터 읽기
-
-```csharp
-var ecb = ...;
-
-var entity = ecb.Instantiate(prefab);
-
-// ❌ 즉시 읽기 불가!
-bool hasComponent = state.EntityManager.HasComponent<MyTag>(entity);
-// → false! (아직 실제로 생성 안 됨)
-
-// ❌ Query에서도 찾을 수 없음
-var query = SystemAPI.QueryBuilder().WithAll<MyTag>().Build();
-int count = query.CalculateEntityCount();
-// → ECB로 생성한 Entity는 카운트 안 됨!
-```
-
-**이유**: ECB는 명령만 기록하고, 실제 실행은 나중에 일어나기 때문!
-
-### ECB 종류별 사용 시기
-
-#### BeginSimulationECB (가장 일반적)
-```csharp
-var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                  .CreateCommandBuffer(state.WorldUnmanaged);
-```
-- **실행 시점**: 다음 프레임 시작
-- **용도**: 대부분의 경우
-- **예시**: Entity 생성, 삭제, 컴포넌트 추가/제거
-
-#### EndSimulationECB (같은 프레임 처리)
-```csharp
-var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
-                  .CreateCommandBuffer(state.WorldUnmanaged);
-```
-- **실행 시점**: 현재 프레임 끝
-- **용도**: 같은 프레임 내에서 처리 필요 시
-- **주의**: UpdateAfter로 시스템 순서 조정 필요
-
-### 성능 팁
-
-#### ✅ 좋은 패턴: ECB 재사용
-```csharp
-// ECB 한 번 생성
-var ecb = SystemAPI.GetSingleton<...>().CreateCommandBuffer(...);
-
-// 여러 Entity 처리
-foreach (var entity in query)
-{
-    ecb.DestroyEntity(entity);
-}
-```
-
-#### ❌ 나쁜 패턴: 반복 생성
-```csharp
-foreach (var entity in query)
-{
-    // 매번 ECB 생성 (비효율!)
-    var ecb = SystemAPI.GetSingleton<...>().CreateCommandBuffer(...);
-    ecb.DestroyEntity(entity);
-}
-```
-
 ### 핵심 정리
 
 **황금률**:
@@ -1654,13 +1502,7 @@ foreach (var entity in query)
 5. 명령이 실제로 실행됨 ✅
 ```
 
-**실전 사용 예시**:
-- GameOverTag 생성 시
-- 총알/몬스터 생성 시
-- Entity 삭제 시
-- 컴포넌트 동적 추가/제거 시
-
 ---
 
-**작성일**: 2025-11-26, 2025-11-27, 2025-11-30, 2025-12-01, 2025-12-03
-**프로젝트**: projectc (Unity DOTS Phase 1-6)
+**작성일**: 2025-11-26, 2025-11-27, 2025-11-30, 2025-12-01, 2025-12-03, 2025-12-10
+**프로젝트**: projectc (Unity DOTS)
