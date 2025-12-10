@@ -3,6 +3,10 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+/// <summary>
+/// 싱글플레이 전용 플레이어 움직임 시스템
+/// 멀티플레이 모드에서는 ProcessPlayerInputSystem이 대신 동작
+/// </summary>
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [BurstCompile]
 public partial struct PlayerMovementSystem : ISystem
@@ -16,6 +20,10 @@ public partial struct PlayerMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 멀티플레이 모드에서는 실행하지 않음
+        if (SystemAPI.HasSingleton<EnableMultiplayer>())
+            return;
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         // IJobEntity를 사용한 병렬 처리
