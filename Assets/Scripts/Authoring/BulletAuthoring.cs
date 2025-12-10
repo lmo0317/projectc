@@ -1,5 +1,6 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Physics;
 using UnityEngine;
 
@@ -16,6 +17,13 @@ public class BulletAuthoring : MonoBehaviour
         {
             // Renderable | Dynamic: 렌더링되면서 움직이는 Entity
             var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
+
+            // Ghost 설정 추가 (Netcode 동기화 필수!)
+            AddComponent(entity, new GhostInstance
+            {
+                ghostType = -1,  // -1 = 자동 할당
+                spawnTick = NetworkTick.Invalid
+            });
 
             AddComponent(entity, new BulletTag());
             AddComponent(entity, new BulletSpeed { Value = authoring.Speed });

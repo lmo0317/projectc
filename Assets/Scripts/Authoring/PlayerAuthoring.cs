@@ -35,8 +35,8 @@ public class PlayerAuthoring : MonoBehaviour
                 MaxHealth = authoring.MaxHealth
             }); // 체력 추가
 
-            // 총알 Prefab Entity 참조 가져오기
-            var bulletPrefabEntity = GetEntity(authoring.BulletPrefab, TransformUsageFlags.Dynamic);
+            // 총알 Prefab Entity 참조 가져오기 (Renderable | Dynamic 필요!)
+            var bulletPrefabEntity = GetEntity(authoring.BulletPrefab, TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
 
             AddComponent(entity, new AutoShootConfig
             {
