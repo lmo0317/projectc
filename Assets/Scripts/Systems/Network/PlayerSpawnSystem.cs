@@ -19,8 +19,10 @@ public partial struct PlayerSpawnSystem : ISystem
     {
         // Spawner가 로드될 때까지 대기
         state.RequireForUpdate<Spawner>();
+        // NetworkStreamInGame이 최소 하나 있을 때까지 대기
+        state.RequireForUpdate<NetworkStreamInGame>();
 
-        // 새로운 플레이어 쿼리: PlayerSpawned 태그가 없는 연결
+        // 새로운 플레이어 쿼리: PlayerSpawned 태그가 없는 연결 (샘플과 동일)
         m_NewPlayersQuery = SystemAPI.QueryBuilder()
             .WithAll<NetworkId>()
             .WithNone<PlayerSpawned>()
