@@ -2,12 +2,14 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
 
 /// <summary>
-/// 몬스터-플레이어 충돌 처리 시스템
+/// 몬스터-플레이어 충돌 처리 시스템 (Server에서만 실행)
 /// </summary>
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(EnemyChaseSystem))]
 [BurstCompile]
@@ -19,7 +21,7 @@ public partial struct PlayerDamageSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<PlayerTag>();
+        state.RequireForUpdate<GhostOwner>(); // 네트워크 플레이어 확인
         state.RequireForUpdate<EnemyTag>();
         lastDamageTime = 0;
     }
@@ -36,10 +38,10 @@ public partial struct PlayerDamageSystem : ISystem
 
         bool damageOccurred = false;
 
-        // 플레이어 위치 가져오기
+        // 플레이어 위치 가져오기 (GhostOwner로 필터링)
         foreach (var (playerTransform, playerHealth, playerEntity) in
                  SystemAPI.Query<RefRO<LocalTransform>, RefRW<PlayerHealth>>()
-                     .WithAll<PlayerTag>()
+                     .WithAll<GhostOwner>()
                      .WithEntityAccess())
         {
             float3 playerPos = playerTransform.ValueRO.Position;

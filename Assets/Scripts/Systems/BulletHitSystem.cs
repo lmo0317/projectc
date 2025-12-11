@@ -2,11 +2,13 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
 
 /// <summary>
-/// 총알-몬스터 충돌 처리 시스템 (매뉴얼 충돌 체크)
+/// 총알-몬스터 충돌 처리 시스템 (Server에서만 실행)
 /// </summary>
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(BulletMovementSystem))]
 [UpdateAfter(typeof(EnemyChaseSystem))]

@@ -1,9 +1,11 @@
 using Unity.Entities;
+using Unity.NetCode;
 using UnityEngine;
 
 /// <summary>
-/// ECS 데이터를 읽어 UI를 업데이트하는 시스템 (MainThread)
+/// ECS 데이터를 읽어 UI를 업데이트하는 시스템 (Client에서만 실행)
 /// </summary>
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 public partial class UIUpdateSystem : SystemBase
 {
@@ -11,6 +13,7 @@ public partial class UIUpdateSystem : SystemBase
 
     protected override void OnCreate()
     {
+        RequireForUpdate<NetworkId>();
         RequireForUpdate<GameStats>();
         RequireForUpdate<PlayerHealth>();
     }
@@ -30,11 +33,21 @@ public partial class UIUpdateSystem : SystemBase
     {
         if (uiManager == null) return;
 
-        // 1. 플레이어 체력 업데이트
-        foreach (var health in SystemAPI.Query<RefRO<PlayerHealth>>().WithAll<PlayerTag>())
+        // 내 NetworkId 가져오기
+        if (!SystemAPI.HasSingleton<NetworkId>())
+            return;
+
+        var myNetworkId = SystemAPI.GetSingleton<NetworkId>().Value;
+
+        // 1. 내 플레이어 체력 업데이트 (GhostOwner로 필터링)
+        foreach (var (health, ghostOwner) in
+                 SystemAPI.Query<RefRO<PlayerHealth>, RefRO<GhostOwner>>())
         {
+            if (ghostOwner.ValueRO.NetworkId != myNetworkId)
+                continue;
+
             uiManager.UpdateHealth(health.ValueRO.CurrentHealth, health.ValueRO.MaxHealth);
-            break; // 플레이어는 하나
+            break; // 내 플레이어만 찾으면 종료
         }
 
         // 2. 게임 통계 업데이트
