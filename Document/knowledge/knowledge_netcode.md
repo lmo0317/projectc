@@ -4,13 +4,14 @@
 1. [NetworkStreamInGame의 핵심 역할](#networkstreamingame의-핵심-역할)
 2. [GoInGameSystem - 네트워크 동기화의 시작점](#goingamesystem---네트워크-동기화의-시작점)
 3. [IInputComponentData - 네트워크 입력 시스템](#iinputcomponentdata---네트워크-입력-시스템)
-4. [Spawner Singleton 패턴](#spawner-singleton-패턴)
-5. [플레이어 스폰의 7단계](#플레이어-스폰의-7단계)
-6. [네트워크 연결 상태 흐름도](#네트워크-연결-상태-흐름도)
-7. [GhostAuthoringComponent와 prefabId](#ghostauthoringcomponent와-prefabid)
-8. [RequireForUpdate vs WithAll 구분](#requireforupdate-vs-withall-구분)
-9. [문제 해결 사례](#문제-해결-사례)
-10. [디버깅 체크리스트](#디버깅-체크리스트)
+4. [RPC (Remote Procedure Call) - 이벤트 기반 통신](#rpc-remote-procedure-call---이벤트-기반-통신)
+5. [Spawner Singleton 패턴](#spawner-singleton-패턴)
+6. [플레이어 스폰의 7단계](#플레이어-스폰의-7단계)
+7. [네트워크 연결 상태 흐름도](#네트워크-연결-상태-흐름도)
+8. [GhostAuthoringComponent와 prefabId](#ghostauthoringcomponent와-prefabid)
+9. [RequireForUpdate vs WithAll 구분](#requireforupdate-vs-withall-구분)
+10. [문제 해결 사례](#문제-해결-사례)
+11. [디버깅 체크리스트](#디버깅-체크리스트)
 
 ---
 
@@ -221,6 +222,389 @@ public partial struct ProcessPlayerInputSystem : ISystem
 4. **올바른 시스템 그룹**:
    - 입력 수집: `GhostInputSystemGroup`
    - 입력 처리: `PredictedSimulationSystemGroup`
+
+---
+
+## RPC (Remote Procedure Call) - 이벤트 기반 통신
+
+### 핵심 개념
+
+**RPC는 Server와 Client 간 이벤트 기반 메시지를 전송하는 방법입니다.**
+
+Ghost 컴포넌트는 **상태(State)**를 지속적으로 동기화하지만, RPC는 **이벤트(Event)**를 한 번만 전송합니다.
+
+```
+Ghost 컴포넌트 (상태 동기화):
+- PlayerHealth, Position 등
+- 매 프레임 자동 동기화
+- 대역폭 사용량 높음
+
+RPC (이벤트 전송):
+- "Enemy 죽었음", "아이템 획득", "채팅 메시지"
+- 필요할 때만 전송
+- 대역폭 절약
+```
+
+### RPC vs Ghost 컴포넌트 비교
+
+| | RPC | Ghost 컴포넌트 |
+|---|---|---|
+| **용도** | 일회성 이벤트 | 지속적인 상태 |
+| **전송 빈도** | 이벤트 발생 시 1회 | 매 프레임 자동 |
+| **예시** | 채팅, 킬 알림, 아이템 획득 | HP, Position, Score |
+| **대역폭** | 낮음 (필요 시만) | 높음 (지속적) |
+| **적합한 데이터** | 이벤트, 명령 | 상태, 수치 |
+
+### NetcodeSamples 03_RPC 패턴
+
+#### 1. RPC 정의
+
+```csharp
+using Unity.NetCode;
+using Unity.Collections;
+
+// RPC 커맨드 구조체
+public struct ChatMessage : IRpcCommand
+{
+    public FixedString128Bytes Message;  // 문자열은 FixedString 사용
+}
+
+// 또 다른 RPC
+public struct KillCountRpc : IRpcCommand
+{
+    public int KillCount;  // int, float 등 unmanaged 타입만 가능
+}
+```
+
+**핵심 규칙**:
+- `IRpcCommand` 인터페이스 구현 필수
+- **Unmanaged 타입만 가능**: int, float, FixedString
+- **Managed 타입 불가**: class, string, List, array
+
+#### 2. Server에서 Client로 RPC 전송
+
+```csharp
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+public partial class SendRpcServerSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        // Enemy가 죽었을 때 KillCount RPC 전송
+        foreach (var (health, entity) in
+                 SystemAPI.Query<RefRO<EnemyHealth>>()
+                     .WithEntityAccess())
+        {
+            if (health.ValueRO.Value <= 0)
+            {
+                // 1. 모든 클라이언트에게 브로드캐스트
+                var rpcEntity = ecb.CreateEntity();
+                ecb.AddComponent(rpcEntity, new KillCountRpc
+                {
+                    KillCount = 1  // +1 증가 이벤트
+                });
+                ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+                // TargetConnection 설정 안 하면 브로드캐스트
+
+                ecb.DestroyEntity(entity);
+            }
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+}
+```
+
+**특정 클라이언트에게만 전송**:
+```csharp
+// 2. 특정 클라이언트에게만 전송
+var rpcEntity = ecb.CreateEntity();
+ecb.AddComponent(rpcEntity, new KillCountRpc { KillCount = 1 });
+ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
+{
+    TargetConnection = connectionEntity  // 특정 connection 지정
+});
+```
+
+#### 3. Client에서 RPC 수신
+
+```csharp
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class ReceiveRpcClientSystem : SystemBase
+{
+    protected override void OnCreate()
+    {
+        RequireForUpdate<NetworkId>();  // 연결된 후에만 실행
+    }
+
+    protected override void OnUpdate()
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        // RPC 수신 처리
+        foreach (var (receiveRequest, rpcData, entity) in
+                 SystemAPI.Query<ReceiveRpcCommandRequest, KillCountRpc>()
+                     .WithEntityAccess())
+        {
+            Debug.Log($"[Client] Received KillCount RPC: {rpcData.KillCount}");
+
+            // GameStats 업데이트
+            foreach (var stats in SystemAPI.Query<RefRW<GameStats>>())
+            {
+                stats.ValueRW.KillCount += rpcData.KillCount;
+                break;
+            }
+
+            // ⚠️ 매우 중요: RPC Entity 반드시 삭제!
+            ecb.DestroyEntity(entity);
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+}
+```
+
+#### 4. Client에서 Server로 RPC 전송
+
+```csharp
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class SendRpcClientSystem : SystemBase
+{
+    protected override void OnCreate()
+    {
+        RequireForUpdate<NetworkId>();  // 연결 확인 필수
+    }
+
+    public void SendChatMessage(string message)
+    {
+        var rpcEntity = EntityManager.CreateEntity();
+        EntityManager.AddComponentData(rpcEntity, new ChatMessage
+        {
+            Message = message
+        });
+        EntityManager.AddComponent<SendRpcCommandRequest>(rpcEntity);
+        // TargetConnection 생략 시 자동으로 Server로 전송
+    }
+}
+```
+
+#### 5. Server에서 RPC 수신
+
+```csharp
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+public partial class ReceiveRpcServerSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        var connections = GetComponentLookup<NetworkId>(true);
+
+        foreach (var (receiveRequest, rpcData, entity) in
+                 SystemAPI.Query<ReceiveRpcCommandRequest, ChatMessage>()
+                     .WithEntityAccess())
+        {
+            // RPC를 보낸 클라이언트 확인
+            var senderNetworkId = connections[receiveRequest.SourceConnection].Value;
+            Debug.Log($"[Server] Received message from {senderNetworkId}: {rpcData.Message}");
+
+            // 모든 클라이언트에게 브로드캐스트
+            var broadcastEntity = ecb.CreateEntity();
+            ecb.AddComponent(broadcastEntity, new ChatMessage
+            {
+                Message = $"User {senderNetworkId}: {rpcData.Message}"
+            });
+            ecb.AddComponent<SendRpcCommandRequest>(broadcastEntity);
+
+            // 원본 RPC Entity 삭제
+            ecb.DestroyEntity(entity);
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+}
+```
+
+### RPC 사용 시 핵심 규칙
+
+#### 1. RPC Entity는 반드시 삭제
+
+```csharp
+// ❌ 잘못됨: Entity 삭제 안 함
+foreach (var (receiveRequest, rpcData, entity) in ...)
+{
+    ProcessRpc(rpcData);
+    // Entity 삭제 안 하면 메모리 누수 & 경고 발생
+}
+
+// ✅ 올바름: Entity 삭제
+foreach (var (receiveRequest, rpcData, entity) in ...)
+{
+    ProcessRpc(rpcData);
+    ecb.DestroyEntity(entity);  // 필수!
+}
+```
+
+**이유**: RPC는 일회성 메시지이므로 처리 후 즉시 삭제해야 함
+
+#### 2. 문자열은 FixedString 사용
+
+```csharp
+// ❌ 잘못됨: string (managed type)
+public struct MyRpc : IRpcCommand
+{
+    public string Message;  // 컴파일 에러!
+}
+
+// ✅ 올바름: FixedString (unmanaged type)
+public struct MyRpc : IRpcCommand
+{
+    public FixedString32Bytes ShortMessage;    // 32바이트
+    public FixedString128Bytes Message;        // 128바이트
+    public FixedString512Bytes LongMessage;    // 512바이트
+}
+```
+
+#### 3. TargetConnection 규칙
+
+```csharp
+// Client → Server
+var rpcEntity = EntityManager.CreateEntity();
+EntityManager.AddComponent(rpcEntity, new MyRpc { ... });
+EntityManager.AddComponent<SendRpcCommandRequest>(rpcEntity);
+// TargetConnection 생략 → 자동으로 Server로 전송
+
+// Server → All Clients (브로드캐스트)
+ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+// TargetConnection 생략 → 모든 Client에게 전송
+
+// Server → Specific Client
+ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
+{
+    TargetConnection = specificConnectionEntity  // 특정 Client만
+});
+```
+
+#### 4. 연결 확인 필수
+
+```csharp
+protected override void OnCreate()
+{
+    RequireForUpdate<NetworkId>();  // 연결된 후에만 실행
+}
+```
+
+**이유**: 연결되기 전에 RPC 전송 시 에러 발생
+
+### RPC 실전 사용 사례
+
+#### 사례 1: Kill Count 동기화
+
+**문제**: Enemy가 죽었을 때 Server의 KillCount를 Client에 알려야 함
+
+**Ghost 방식 (매 프레임 동기화)**:
+```csharp
+[GhostField] public int KillCount;  // 매 프레임 전송 (비효율)
+```
+
+**RPC 방식 (이벤트만 전송)** ⭐ 추천:
+```csharp
+// Server: Enemy 죽을 때만 RPC 전송
+var rpcEntity = ecb.CreateEntity();
+ecb.AddComponent(rpcEntity, new KillCountRpc { KillCount = 1 });
+ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+
+// Client: RPC 받아서 로컬 GameStats 업데이트
+stats.ValueRW.KillCount += rpcData.KillCount;
+```
+
+**장점**:
+- 대역폭 절약 (킬 발생 시에만 전송)
+- 이벤트 명확함 ("+1 증가" 이벤트)
+
+#### 사례 2: 채팅 시스템
+
+**Ghost 방식으로는 불가능** (문자열이 계속 바뀜)
+
+**RPC 방식**:
+```csharp
+public struct ChatMessage : IRpcCommand
+{
+    public FixedString128Bytes Message;
+}
+
+// Client → Server
+EntityManager.AddComponentData(rpcEntity, new ChatMessage { Message = "Hello" });
+
+// Server → All Clients (브로드캐스트)
+ecb.AddComponent(broadcastEntity, new ChatMessage
+{
+    Message = $"User {networkId}: Hello"
+});
+```
+
+#### 사례 3: 아이템 획득
+
+```csharp
+public struct ItemPickupRpc : IRpcCommand
+{
+    public int ItemId;
+    public int Quantity;
+}
+
+// Server: 플레이어가 아이템 획득 시
+var rpcEntity = ecb.CreateEntity();
+ecb.AddComponent(rpcEntity, new ItemPickupRpc
+{
+    ItemId = 42,
+    Quantity = 5
+});
+ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
+{
+    TargetConnection = playerConnection  // 해당 플레이어에게만
+});
+```
+
+### RPC 디버깅
+
+#### 1. RPC가 전송되지 않을 때
+
+**체크리스트**:
+- [ ] `RequireForUpdate<NetworkId>()` 추가했는지
+- [ ] `NetworkStreamInGame` 태그가 connection에 있는지
+- [ ] RPC Entity를 생성했는지
+- [ ] `SendRpcCommandRequest` 컴포넌트 추가했는지
+
+#### 2. RPC가 수신되지 않을 때
+
+**체크리스트**:
+- [ ] 수신 System의 WorldSystemFilter 확인
+- [ ] `ReceiveRpcCommandRequest` 쿼리에 포함했는지
+- [ ] RPC Entity를 삭제하고 있는지 (중복 수신 방지)
+
+#### 3. RPC 관련 경고/에러
+
+```
+Warning: RPC entity was not destroyed
+→ ecb.DestroyEntity(entity) 누락
+
+Error: Cannot send RPC before connection is established
+→ RequireForUpdate<NetworkId>() 추가
+
+Error: RPC type contains managed field
+→ string 대신 FixedString 사용
+```
+
+### NetcodeSamples 03_RPC에서 배운 핵심
+
+1. **RPC는 일회성 메시지** - 처리 후 반드시 삭제
+2. **Unmanaged 타입만 사용** - FixedString, int, float
+3. **TargetConnection으로 대상 제어** - 브로드캐스트 vs 특정 Client
+4. **연결 확인 필수** - RequireForUpdate<NetworkId>()
+5. **이벤트 데이터에 적합** - 상태가 아닌 이벤트 전송
 
 ---
 
