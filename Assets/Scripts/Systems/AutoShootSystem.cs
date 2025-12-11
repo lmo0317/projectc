@@ -28,8 +28,8 @@ public partial struct AutoShootSystem : ISystem
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
         // 플레이어의 발사 처리 (Simulate 태그 필터링)
-        foreach (var (transform, shootConfig, playerTag) in
-                 SystemAPI.Query<RefRO<LocalTransform>, RefRW<AutoShootConfig>, RefRO<PlayerTag>>()
+        foreach (var (transform, shootConfig, firePointOffset, playerTag) in
+                 SystemAPI.Query<RefRO<LocalTransform>, RefRW<AutoShootConfig>, RefRO<FirePointOffset>, RefRO<PlayerTag>>()
                      .WithAll<Simulate>())
         {
             // ValueRW를 통해 컴포넌트 직접 수정 (로컬 복사본 생성 방지)
@@ -76,8 +76,12 @@ public partial struct AutoShootSystem : ISystem
                 // 총알 방향에 맞는 회전값 계산
                 quaternion bulletRotation = quaternion.LookRotationSafe(targetDirection, math.up());
 
+                // FirePoint 오프셋을 플레이어 회전에 맞게 월드 좌표로 변환
+                float3 worldOffset = math.mul(transform.ValueRO.Rotation, firePointOffset.ValueRO.LocalOffset);
+                float3 spawnPos = playerPos + worldOffset;
+
                 // 총알 위치와 회전 설정
-                ecb.SetComponent(bulletEntity, LocalTransform.FromPositionRotation(playerPos, bulletRotation));
+                ecb.SetComponent(bulletEntity, LocalTransform.FromPositionRotation(spawnPos, bulletRotation));
 
                 // 총알 발사 방향 설정 (타겟팅 적용)
                 ecb.SetComponent(bulletEntity, new BulletDirection { Value = targetDirection });

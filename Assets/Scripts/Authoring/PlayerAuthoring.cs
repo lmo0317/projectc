@@ -9,6 +9,7 @@ public class PlayerAuthoring : MonoBehaviour
     public float MoveSpeed = 5f;
     public float FireRate = 0.5f;  // 초당 2발
     public GameObject BulletPrefab; // Inspector에서 할당
+    public Transform FirePoint;     // 총알 발사 위치 (Inspector에서 할당)
     public float ColliderRadius = 0.5f; // 플레이어 충돌 반경
     public float MaxHealth = 100f; // 최대 체력
 
@@ -43,6 +44,24 @@ public class PlayerAuthoring : MonoBehaviour
                 FireRate = authoring.FireRate,
                 TimeSinceLastShot = 0f,
                 BulletPrefab = bulletPrefabEntity
+            });
+
+            // 발사 위치 오프셋 추가
+            float3 firePointOffset;
+            if (authoring.FirePoint != null)
+            {
+                // FirePoint Transform의 로컬 위치 사용
+                firePointOffset = authoring.FirePoint.localPosition;
+            }
+            else
+            {
+                // FirePoint가 없으면 기본값 (플레이어 앞쪽 약간 위)
+                firePointOffset = new float3(0, 0.5f, 1f);
+            }
+
+            AddComponent(entity, new FirePointOffset
+            {
+                LocalOffset = firePointOffset
             });
 
             // PhysicsCollider 추가 (Sphere)
