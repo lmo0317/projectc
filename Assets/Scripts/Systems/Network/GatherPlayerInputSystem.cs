@@ -37,7 +37,7 @@ public partial class GatherPlayerInputSystem : SystemBase
             if (down) input.ValueRW.Vertical -= 1;
             if (up) input.ValueRW.Vertical += 1;
 
-            Debug.Log($"[Client Input] H:{input.ValueRW.Horizontal}, V:{input.ValueRW.Vertical}");
+            //Debug.Log($"[Client Input] H:{input.ValueRW.Horizontal}, V:{input.ValueRW.Vertical}");
         }
     }
 }

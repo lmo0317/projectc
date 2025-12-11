@@ -31,7 +31,7 @@ public partial struct EnemyChaseSystem : ISystem
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         // 1단계: 모든 플레이어 위치 수집
-        var playerPositions = new NativeList<float3>(Allocator.Temp);
+        var playerPositions = new NativeList<float3>(Allocator.TempJob);
         foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<GhostOwner>())
         {
             playerPositions.Add(transform.ValueRO.Position);
