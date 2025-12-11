@@ -1,8 +1,13 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
 
+/// <summary>
+/// Enemy 스폰 시스템 (Server에서만 실행)
+/// </summary>
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(AutoShootSystem))]
 [BurstCompile]
@@ -13,7 +18,7 @@ public partial struct EnemySpawnSystem : ISystem
     {
         // 스폰 설정과 플레이어가 있을 때만 실행
         state.RequireForUpdate<EnemySpawnConfig>();
-        state.RequireForUpdate<PlayerTag>();
+        state.RequireForUpdate<GhostOwner>(); // 네트워크 플레이어 확인
     }
 
     [BurstCompile]
@@ -29,12 +34,18 @@ public partial struct EnemySpawnSystem : ISystem
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-        // 플레이어 위치 가져오기
-        float3 playerPosition = float3.zero;
-        foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerTag>())
+        // 모든 플레이어 위치 수집
+        var playerPositions = new Unity.Collections.NativeList<float3>(Unity.Collections.Allocator.Temp);
+        foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<GhostOwner>())
         {
-            playerPosition = transform.ValueRO.Position;
-            break;
+            playerPositions.Add(transform.ValueRO.Position);
+        }
+
+        // 플레이어가 없으면 스폰하지 않음
+        if (playerPositions.Length == 0)
+        {
+            playerPositions.Dispose();
+            return;
         }
 
         // 스폰 매니저 처리
@@ -58,6 +69,10 @@ public partial struct EnemySpawnSystem : ISystem
                     }
                 }
 
+                // 랜덤하게 플레이어 한 명 선택
+                int randomPlayerIndex = spawnConfig.ValueRW.RandomGenerator.NextInt(0, playerPositions.Length);
+                float3 targetPlayerPosition = playerPositions[randomPlayerIndex];
+
                 // 랜덤 위치 계산 (원형 분포)
                 float angle = spawnConfig.ValueRW.RandomGenerator.NextFloat(0f, math.PI * 2f);
                 float distance = spawnConfig.ValueRW.RandomGenerator.NextFloat(
@@ -72,12 +87,15 @@ public partial struct EnemySpawnSystem : ISystem
                     math.sin(angle) * distance
                 );
 
-                float3 spawnPosition = playerPosition + offset;
+                float3 spawnPosition = targetPlayerPosition + offset;
 
                 // 몬스터 Entity 생성
                 var enemyEntity = ecb.Instantiate(spawnConfig.ValueRW.EnemyPrefab);
                 ecb.SetComponent(enemyEntity, LocalTransform.FromPosition(spawnPosition));
             }
         }
+
+        // NativeList 정리
+        playerPositions.Dispose();
     }
 }

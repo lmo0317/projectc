@@ -1,6 +1,8 @@
 using Unity.Entities;
+using Unity.NetCode;
 
+[GhostComponent(PrefabType = GhostPrefabType.Server)]
 public struct EnemyHealth : IComponentData
 {
-    public float Value;
+    [GhostField] public float Value;
 }

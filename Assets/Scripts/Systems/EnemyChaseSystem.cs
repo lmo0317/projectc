@@ -2,13 +2,16 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
 
 /// <summary>
-/// Enemy가 플레이어를 추적하면서 서로 겹치지 않도록 하는 시스템
-/// - 플레이어 추적 (Chase)
+/// Enemy가 가장 가까운 플레이어를 추적하면서 서로 겹치지 않도록 하는 시스템
+/// - 다중 플레이어 지원 (가장 가까운 플레이어 추적)
 /// - Enemy 간 충돌 회피 (Separation)
+/// - Server에서만 실행
 /// </summary>
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(EnemySpawnSystem))]
 [BurstCompile]
@@ -18,7 +21,7 @@ public partial struct EnemyChaseSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         // 플레이어와 적이 모두 존재할 때만 실행
-        state.RequireForUpdate<PlayerTag>();
+        state.RequireForUpdate<GhostOwner>(); // 네트워크 플레이어 확인
         state.RequireForUpdate<EnemyTag>();
     }
 
@@ -27,19 +30,29 @@ public partial struct EnemyChaseSystem : ISystem
     {
         float deltaTime = SystemAPI.Time.DeltaTime;
 
-        // 플레이어 위치 쿼리 (한 번만)
-        float3 playerPosition = float3.zero;
-        foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerTag>())
+        // 1단계: 모든 플레이어 위치 수집
+        var playerPositions = new NativeList<float3>(Allocator.Temp);
+        foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<GhostOwner>())
         {
-            playerPosition = transform.ValueRO.Position;
-            break; // 플레이어는 1명이므로 첫 번째만
+            playerPositions.Add(transform.ValueRO.Position);
         }
 
-        // 1단계: 모든 Enemy의 위치를 수집
+        // 플레이어가 없으면 추적하지 않음
+        if (playerPositions.Length == 0)
+        {
+            playerPositions.Dispose();
+            return;
+        }
+
+        // 2단계: 모든 Enemy의 위치를 수집
         var enemyQuery = SystemAPI.QueryBuilder().WithAll<EnemyTag, LocalTransform>().Build();
         int enemyCount = enemyQuery.CalculateEntityCount();
 
-        if (enemyCount == 0) return;
+        if (enemyCount == 0)
+        {
+            playerPositions.Dispose();
+            return;
+        }
 
         var enemyPositions = new NativeArray<float3>(enemyCount, Allocator.TempJob);
 
@@ -50,24 +63,25 @@ public partial struct EnemyChaseSystem : ISystem
             index++;
         }
 
-        // 2단계: 플레이어 추적 + 충돌 회피 로직 실행
+        // 3단계: 가장 가까운 플레이어 추적 + 충돌 회피 로직 실행
         new EnemyChaseJob
         {
-            PlayerPosition = playerPosition,
+            AllPlayerPositions = playerPositions.AsArray(),
             DeltaTime = deltaTime,
             AllEnemyPositions = enemyPositions
         }.ScheduleParallel();
 
-        // 3단계: Job 완료 후 NativeArray 정리
+        // 4단계: Job 완료 후 NativeArray 정리
         state.Dependency.Complete();
         enemyPositions.Dispose();
+        playerPositions.Dispose();
     }
 }
 
 [BurstCompile]
 public partial struct EnemyChaseJob : IJobEntity
 {
-    public float3 PlayerPosition;
+    [ReadOnly] public NativeArray<float3> AllPlayerPositions;
     public float DeltaTime;
     [ReadOnly] public NativeArray<float3> AllEnemyPositions;
 
@@ -75,8 +89,22 @@ public partial struct EnemyChaseJob : IJobEntity
     {
         float3 currentPosition = transform.Position;
 
-        // 1. 플레이어를 향하는 방향 계산 (정규화)
-        float3 chaseDirection = PlayerPosition - currentPosition;
+        // 1. 가장 가까운 플레이어 찾기
+        float3 targetPlayerPosition = float3.zero;
+        float closestDistSq = float.MaxValue;
+
+        for (int i = 0; i < AllPlayerPositions.Length; i++)
+        {
+            float distSq = math.distancesq(currentPosition, AllPlayerPositions[i]);
+            if (distSq < closestDistSq)
+            {
+                closestDistSq = distSq;
+                targetPlayerPosition = AllPlayerPositions[i];
+            }
+        }
+
+        // 2. 가장 가까운 플레이어를 향하는 방향 계산 (정규화)
+        float3 chaseDirection = targetPlayerPosition - currentPosition;
         chaseDirection.y = 0;
         float3 normalizedChaseDirection = float3.zero;
         if (math.lengthsq(chaseDirection) > 0.01f)
@@ -84,7 +112,7 @@ public partial struct EnemyChaseJob : IJobEntity
             normalizedChaseDirection = math.normalize(chaseDirection);
         }
 
-        // 2. 다른 Enemy들로부터 떨어지는 방향 계산 (Separation)
+        // 3. 다른 Enemy들로부터 떨어지는 방향 계산 (Separation)
         float3 separationDirection = float3.zero;
         float separationRadius = 5.0f; // 충돌 회피 반경 증가 (Enemy 간 최소 거리)
         int nearbyCount = 0;
@@ -124,7 +152,7 @@ public partial struct EnemyChaseJob : IJobEntity
             separationDirection /= nearbyCount;
         }
 
-        // 3. 최종 이동 방향 = 추적 방향 + 분리 방향 (둘 다 정규화된 상태)
+        // 4. 최종 이동 방향 = 추적 방향 + 분리 방향 (둘 다 정규화된 상태)
         // separationDirection에 더 높은 가중치를 줘서 충돌 회피 우선
         float3 finalDirection = normalizedChaseDirection + separationDirection * 5.0f;
         finalDirection.y = 0;
