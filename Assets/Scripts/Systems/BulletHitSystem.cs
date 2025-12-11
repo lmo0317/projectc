@@ -56,12 +56,14 @@ public partial struct BulletHitSystem : ISystem
                     {
                         ecb.DestroyEntity(enemyEntity);
 
-                        // 처치 카운트 증가
-                        foreach (var stats in SystemAPI.Query<RefRW<GameStats>>())
+                        // RPC 생성: 모든 Client + Server에게 KillCount +1 브로드캐스트
+                        var rpcEntity = ecb.CreateEntity();
+                        ecb.AddComponent(rpcEntity, new KillCountRpc
                         {
-                            stats.ValueRW.KillCount++;
-                            break; // 싱글톤
-                        }
+                            IncrementAmount = 1
+                        });
+                        ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+                        // TargetConnection 생략 → 모든 Client에게 브로드캐스트
                     }
 
                     // 총알 삭제
