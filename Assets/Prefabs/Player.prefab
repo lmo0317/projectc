@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAuthoring
   MoveSpeed: 5
-  FireRate: 0.5
+  FireRate: 0.2
   BulletPrefab: {fileID: 5995108716016775410, guid: 56ac3d9a37a33464b9fc564041cb3bfd, type: 3}
   ColliderRadius: 0.5
   MaxHealth: 100
@@ -81,12 +81,13 @@ MonoBehaviour:
   OptimizationMode: 0
   Importance: 1
   MaxSendRate: 0
-  prefabId: a7b3c2d4e5f6g7h8i9j0k1l2m3n4o5p6
+  prefabId: 563621c9929ddd44cbb48c0c66942046
   HasOwner: 1
   SupportAutoCommandTarget: 1
   TrackInterpolationDelay: 0
   GhostGroup: 0
   UsePreSerialization: 0
+  UseSingleBaseline: 0
   RollbackPredictedSpawnedGhostState: 0
   RollbackPredictionOnStructuralChanges: 1
 --- !u!1001 &6604263545074014624

@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAuthoring
   Health: 100
-  Speed: 3
+  Speed: 2
   ColliderRadius: 0.5
 --- !u!114 &5230384193926929299
 MonoBehaviour:
