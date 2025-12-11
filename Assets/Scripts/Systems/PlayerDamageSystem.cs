@@ -55,21 +55,25 @@ public partial struct PlayerDamageSystem : ISystem
                 float3 enemyPos = enemyTransform.ValueRO.Position;
                 float distance = math.distance(playerPos, enemyPos);
 
-                // 충돌 반경: Player(0.5) + Enemy(0.5) = 1.0
-                if (distance < 1.0f)
+                // 충돌 반경: Player(0.5) + Enemy(0.5) = 1.0 → 2.0으로 증가 (더 쉽게 충돌)
+                if (distance < 2.0f)
                 {
                     // 플레이어 데미지 적용 (고정 데미지 10)
                     playerHealth.ValueRW.CurrentHealth -= 10f;
+
+                    // 즉시 쿨다운 갱신
+                    lastDamageTime = currentTime;
                     damageOccurred = true;
+
+                    Debug.Log($"[PlayerDamageSystem] Player hit! Distance: {distance:F2}, Health: {playerHealth.ValueRO.CurrentHealth}/{playerHealth.ValueRO.MaxHealth}");
+
                     break; // 한 프레임에 한 번만 데미지 적용
                 }
             }
 
-            // 데미지가 발생했으면 쿨다운 시작 및 체력 체크
+            // 데미지가 발생했으면 체력 체크
             if (damageOccurred)
             {
-                lastDamageTime = currentTime;
-
                 // 체력 0 이하 체크
                 if (playerHealth.ValueRO.CurrentHealth <= 0)
                 {
