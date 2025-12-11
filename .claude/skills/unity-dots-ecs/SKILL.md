@@ -332,28 +332,165 @@ public partial struct ClientOnlySystem : ISystem { }
 public partial struct SharedSystem : ISystem { }
 ```
 
-### RPC
+### RPC (Remote Procedure Call)
+
+RPC를 사용하여 Server와 Client 간 이벤트 기반 메시지를 전송합니다.
+
+#### RPC 정의
 
 ```csharp
+using Unity.NetCode;
+using Unity.Collections;
+
+// RPC 커맨드 구조체 정의
 public struct MyRpcCommand : IRpcCommand
 {
     public int Value;
-}
-
-// Send RPC
-public void SendRpc(ref SystemState state, Entity target)
-{
-    var rpcEntity = state.EntityManager.CreateEntity();
-    state.EntityManager.AddComponentData(rpcEntity, new MyRpcCommand 
-    { 
-        Value = 42 
-    });
-    state.EntityManager.AddComponentData(rpcEntity, new SendRpcCommandRequest 
-    { 
-        TargetConnection = target 
-    });
+    public FixedString128Bytes Message; // 문자열은 FixedString 사용
 }
 ```
+
+#### Server에서 Client로 RPC 전송
+
+```csharp
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+public partial class ServerRpcSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        // 1. 모든 클라이언트에게 브로드캐스트
+        var broadcastEntity = ecb.CreateEntity();
+        ecb.AddComponent(broadcastEntity, new MyRpcCommand
+        {
+            Value = 42,
+            Message = "Hello All Clients"
+        });
+        ecb.AddComponent<SendRpcCommandRequest>(broadcastEntity);
+
+        // 2. 특정 클라이언트에게만 전송
+        foreach (var (networkId, connectionEntity) in
+                 SystemAPI.Query<RefRO<NetworkId>>()
+                     .WithEntityAccess()
+                     .WithNone<MyTag>()) // 특정 조건
+        {
+            var targetEntity = ecb.CreateEntity();
+            ecb.AddComponent(targetEntity, new MyRpcCommand
+            {
+                Value = networkId.ValueRO.Value,
+                Message = "Hello Specific Client"
+            });
+            ecb.AddComponent(targetEntity, new SendRpcCommandRequest
+            {
+                TargetConnection = connectionEntity
+            });
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+}
+```
+
+#### Client에서 Server로 RPC 전송
+
+```csharp
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class ClientRpcSystem : SystemBase
+{
+    protected override void OnCreate()
+    {
+        RequireForUpdate<NetworkId>(); // 연결된 후에만 실행
+    }
+
+    protected override void OnUpdate()
+    {
+        // RPC 전송
+        var rpcEntity = EntityManager.CreateEntity();
+        EntityManager.AddComponentData(rpcEntity, new MyRpcCommand
+        {
+            Value = 100,
+            Message = "Hello Server"
+        });
+        EntityManager.AddComponent<SendRpcCommandRequest>(rpcEntity);
+        // TargetConnection을 설정하지 않으면 자동으로 Server로 전송
+    }
+}
+```
+
+#### RPC 수신 처리
+
+```csharp
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+public partial class ReceiveRpcServerSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        var connections = GetComponentLookup<NetworkId>(true);
+
+        // 수신된 RPC 처리
+        foreach (var (receiveRequest, rpcData, entity) in
+                 SystemAPI.Query<ReceiveRpcCommandRequest, MyRpcCommand>()
+                     .WithEntityAccess())
+        {
+            // RPC를 보낸 클라이언트의 NetworkId
+            var senderNetworkId = connections[receiveRequest.SourceConnection].Value;
+
+            UnityEngine.Debug.Log(
+                $"[Server] Received RPC from client {senderNetworkId}: " +
+                $"Value={rpcData.Value}, Message={rpcData.Message}");
+
+            // RPC 처리 로직
+            // ...
+
+            // RPC Entity 삭제 (필수!)
+            ecb.DestroyEntity(entity);
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+}
+
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class ReceiveRpcClientSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        foreach (var (receiveRequest, rpcData, entity) in
+                 SystemAPI.Query<ReceiveRpcCommandRequest, MyRpcCommand>()
+                     .WithEntityAccess())
+        {
+            UnityEngine.Debug.Log(
+                $"[Client] Received RPC from server: " +
+                $"Value={rpcData.Value}, Message={rpcData.Message}");
+
+            // RPC 처리 로직
+            // ...
+
+            // RPC Entity 삭제 (필수!)
+            ecb.DestroyEntity(entity);
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+}
+```
+
+#### RPC 사용 시 주의사항
+
+1. **RPC Entity는 반드시 삭제해야 함** - 수신 처리 후 `ecb.DestroyEntity(entity)` 호출
+2. **문자열은 FixedString 사용** - `FixedString32Bytes`, `FixedString128Bytes` 등
+3. **Unmanaged 타입만 가능** - class, string, List 등 사용 불가
+4. **TargetConnection 생략 시**:
+   - Client → Server: 자동으로 Server로 전송
+   - Server → Client: 모든 Client에게 브로드캐스트
+5. **연결 확인** - `RequireForUpdate<NetworkId>()`로 연결된 후에만 RPC 전송
 
 ## Performance Tips
 
