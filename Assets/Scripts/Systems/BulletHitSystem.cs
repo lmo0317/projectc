@@ -51,6 +51,15 @@ public partial struct BulletHitSystem : ISystem
                     var damage = SystemAPI.GetComponent<DamageValue>(bulletEntity).Value;
                     enemyHealth.ValueRW.Value -= damage;
 
+                    // 피격 이펙트 RPC 전송 (모든 클라이언트에게)
+                    var hitEffectRpcEntity = ecb.CreateEntity();
+                    ecb.AddComponent(hitEffectRpcEntity, new HitEffectRpc
+                    {
+                        Position = enemyPos,
+                        Damage = damage
+                    });
+                    ecb.AddComponent<SendRpcCommandRequest>(hitEffectRpcEntity);
+
                     // Enemy 체력이 0 이하면 삭제
                     if (enemyHealth.ValueRO.Value <= 0)
                     {
