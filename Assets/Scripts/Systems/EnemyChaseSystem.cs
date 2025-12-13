@@ -30,14 +30,17 @@ public partial struct EnemyChaseSystem : ISystem
     {
         float deltaTime = SystemAPI.Time.DeltaTime;
 
-        // 1단계: 모든 플레이어 위치 수집
+        // 1단계: 살아있는 플레이어 위치 수집 (PlayerDead가 비활성화된 플레이어만)
         var playerPositions = new NativeList<float3>(Allocator.TempJob);
-        foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<GhostOwner>())
+        foreach (var transform in
+                 SystemAPI.Query<RefRO<LocalTransform>>()
+                     .WithAll<GhostOwner, PlayerHealth>()
+                     .WithDisabled<PlayerDead>())
         {
             playerPositions.Add(transform.ValueRO.Position);
         }
 
-        // 플레이어가 없으면 추적하지 않음
+        // 살아있는 플레이어가 없으면 추적하지 않음
         if (playerPositions.Length == 0)
         {
             playerPositions.Dispose();
