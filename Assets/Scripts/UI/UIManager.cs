@@ -89,4 +89,15 @@ public class UIManager : MonoBehaviour
             }
         }
     }
+
+    /// <summary>
+    /// 게임 오버 UI 숨기기 (부활 시 호출)
+    /// </summary>
+    public void HideGameOver()
+    {
+        if (GameOverPanel != null)
+        {
+            GameOverPanel.SetActive(false);
+        }
+    }
 }

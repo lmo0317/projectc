@@ -26,7 +26,8 @@ public partial struct ProcessPlayerInputSystem : ISystem
 
         foreach (var (input, transform, speed) in
                  SystemAPI.Query<RefRO<PlayerInput>, RefRW<LocalTransform>, RefRO<MovementSpeed>>()
-                     .WithAll<Simulate>())  // Netcode 예측 플래그
+                     .WithAll<Simulate>()  // Netcode 예측 플래그
+                     .WithDisabled<PlayerDead>())  // 죽은 플레이어는 움직이지 않음
         {
             // 입력 기반 이동
             if (input.ValueRO.Horizontal != 0 || input.ValueRO.Vertical != 0)

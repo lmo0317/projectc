@@ -27,10 +27,11 @@ public partial struct AutoShootSystem : ISystem
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-        // 플레이어의 발사 처리 (Simulate 태그 필터링)
+        // 살아있는 플레이어만 발사 (Simulate 태그 필터링, 죽은 플레이어 제외)
         foreach (var (transform, shootConfig, firePointOffset, playerTag) in
                  SystemAPI.Query<RefRO<LocalTransform>, RefRW<AutoShootConfig>, RefRO<FirePointOffset>, RefRO<PlayerTag>>()
-                     .WithAll<Simulate>())
+                     .WithAll<Simulate>()
+                     .WithDisabled<PlayerDead>())
         {
             // ValueRW를 통해 컴포넌트 직접 수정 (로컬 복사본 생성 방지)
             shootConfig.ValueRW.TimeSinceLastShot += deltaTime;

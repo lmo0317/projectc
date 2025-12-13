@@ -36,6 +36,10 @@ public class PlayerAuthoring : MonoBehaviour
                 MaxHealth = authoring.MaxHealth
             }); // 체력 추가
 
+            // PlayerDead 컴포넌트 추가 (비활성화 상태로 시작)
+            AddComponent<PlayerDead>(entity);
+            SetComponentEnabled<PlayerDead>(entity, false);
+
             // 총알 Prefab Entity 참조 가져오기 (Renderable | Dynamic 필요!)
             var bulletPrefabEntity = GetEntity(authoring.BulletPrefab, TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
 
