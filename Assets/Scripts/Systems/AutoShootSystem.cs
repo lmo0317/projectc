@@ -28,8 +28,8 @@ public partial struct AutoShootSystem : ISystem
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
         // 살아있는 플레이어만 발사 (Simulate 태그 필터링, 죽은 플레이어 제외)
-        foreach (var (transform, shootConfig, firePointOffset, playerTag) in
-                 SystemAPI.Query<RefRO<LocalTransform>, RefRW<AutoShootConfig>, RefRO<FirePointOffset>, RefRO<PlayerTag>>()
+        foreach (var (transform, shootConfig, leftFirePoint, rightFirePoint, playerTag) in
+                 SystemAPI.Query<RefRO<LocalTransform>, RefRW<AutoShootConfig>, RefRO<LeftFirePointOffset>, RefRO<RightFirePointOffset>, RefRO<PlayerTag>>()
                      .WithAll<Simulate>()
                      .WithDisabled<PlayerDead>())
         {
@@ -42,14 +42,25 @@ public partial struct AutoShootSystem : ISystem
                 shootConfig.ValueRW.TimeSinceLastShot = 0f;
 
                 // === 타겟팅 로직 시작 ===
-                const float MAX_TARGETING_RANGE = 20f;
+                const float MAX_TARGETING_RANGE = 30f;
+
                 float3 playerPos = transform.ValueRO.Position;
-                float3 targetDirection = float3.zero;
-                bool targetFound = false;
+                float3 playerForward = math.mul(transform.ValueRO.Rotation, new float3(0, 0, 1));
+
+                // 현재 발사할 쪽 결정
+                bool shootFromLeft = shootConfig.ValueRW.ShootFromLeft;
+
+                // 발사 방향은 항상 플레이어 전방
+                float3 shootDirection = playerForward;
+
+                // 가장 가까운 적 찾기 (각도 제한 없음)
+                Entity targetEntity = Entity.Null;
                 float closestDistance = float.MaxValue;
 
-                // 모든 적 탐색
-                foreach (var enemyTransform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<EnemyTag>())
+                foreach (var (enemyTransform, enemyEntity) in
+                         SystemAPI.Query<RefRO<LocalTransform>>()
+                             .WithAll<EnemyTag>()
+                             .WithEntityAccess())
                 {
                     float3 enemyPos = enemyTransform.ValueRO.Position;
                     float distance = math.distance(playerPos, enemyPos);
@@ -58,16 +69,8 @@ public partial struct AutoShootSystem : ISystem
                     if (distance <= MAX_TARGETING_RANGE && distance < closestDistance)
                     {
                         closestDistance = distance;
-                        targetDirection = math.normalize(enemyPos - playerPos);
-                        targetFound = true;
+                        targetEntity = enemyEntity;
                     }
-                }
-
-                // 타겟 없으면 플레이어가 바라보는 방향
-                if (!targetFound)
-                {
-                    // 플레이어의 Forward 방향 추출
-                    targetDirection = math.mul(transform.ValueRO.Rotation, new float3(0, 0, 1));
                 }
                 // === 타겟팅 로직 끝 ===
 
@@ -75,17 +78,29 @@ public partial struct AutoShootSystem : ISystem
                 var bulletEntity = ecb.Instantiate(shootConfig.ValueRW.BulletPrefab);
 
                 // 총알 방향에 맞는 회전값 계산
-                quaternion bulletRotation = quaternion.LookRotationSafe(targetDirection, math.up());
+                quaternion bulletRotation = quaternion.LookRotationSafe(shootDirection, math.up());
+
+                // 좌우 FirePoint 선택
+                float3 localOffset = shootFromLeft ? leftFirePoint.ValueRO.LocalOffset : rightFirePoint.ValueRO.LocalOffset;
 
                 // FirePoint 오프셋을 플레이어 회전에 맞게 월드 좌표로 변환
-                float3 worldOffset = math.mul(transform.ValueRO.Rotation, firePointOffset.ValueRO.LocalOffset);
+                float3 worldOffset = math.mul(transform.ValueRO.Rotation, localOffset);
                 float3 spawnPos = playerPos + worldOffset;
 
                 // 총알 위치와 회전 설정
                 ecb.SetComponent(bulletEntity, LocalTransform.FromPositionRotation(spawnPos, bulletRotation));
 
-                // 총알 발사 방향 설정 (타겟팅 적용)
-                ecb.SetComponent(bulletEntity, new BulletDirection { Value = targetDirection });
+                // 총알 발사 방향 설정 (비행기 전방)
+                ecb.SetComponent(bulletEntity, new BulletDirection { Value = shootDirection });
+
+                // 미사일 타겟 설정 (타겟이 있으면)
+                if (targetEntity != Entity.Null)
+                {
+                    ecb.SetComponent(bulletEntity, new MissileTarget { TargetEntity = targetEntity });
+                }
+
+                // 좌우 교대 토글
+                shootConfig.ValueRW.ShootFromLeft = !shootFromLeft;
             }
         }
     }

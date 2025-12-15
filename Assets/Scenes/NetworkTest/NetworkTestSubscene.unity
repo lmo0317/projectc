@@ -302,7 +302,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnAuthoring
   SpawnInterval: 0.5
   EnemyPrefab: {fileID: 9063731474767392974, guid: 1a842a0deb4d71943a13418c26cd2a0f, type: 3}
-  SpawnRadius: 15
+  SpawnRadius: 30
   MaxEnemies: 100
 --- !u!1 &568051764
 GameObject:

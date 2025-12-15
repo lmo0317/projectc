@@ -50,7 +50,9 @@ MonoBehaviour:
   Speed: 10
   Lifetime: 5
   ColliderRadius: 0.5
-  Damage: 25
+  Damage: 50
+  IsMissile: 1
+  MissileTurnSpeed: 300
 --- !u!114 &1796126118407042934
 MonoBehaviour:
   m_ObjectHideFlags: 0

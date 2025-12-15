@@ -10,6 +10,8 @@ public class BulletAuthoring : MonoBehaviour
     public float Lifetime = 5f;
     public float ColliderRadius = 0.2f; // 총알 충돌 반경
     public float Damage = 25f; // 데미지 값
+    public bool IsMissile = true; // 미사일 여부
+    public float MissileTurnSpeed = 180f; // 미사일 회전 속도 (초당 각도)
 
     class Baker : Baker<BulletAuthoring>
     {
@@ -26,6 +28,14 @@ public class BulletAuthoring : MonoBehaviour
             AddComponent(entity, new BulletLifetime { RemainingTime = authoring.Lifetime });
             AddComponent(entity, new BulletDirection { Value = float3.zero }); // 발사 시 설정됨
             AddComponent(entity, new DamageValue { Value = authoring.Damage }); // 데미지 추가
+
+            // 미사일 컴포넌트 추가
+            if (authoring.IsMissile)
+            {
+                AddComponent(entity, new MissileTag());
+                AddComponent(entity, new MissileTarget { TargetEntity = Entity.Null }); // 발사 시 설정됨
+                AddComponent(entity, new MissileTurnSpeed { Value = authoring.MissileTurnSpeed });
+            }
 
             // PhysicsCollider 추가 (Sphere) - Trigger로 설정
             // Material에 RaiseTriggerEvents 설정

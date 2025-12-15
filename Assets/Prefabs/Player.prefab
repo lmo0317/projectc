@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &644081701106022970
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5432906646451408036}
+  m_Layer: 0
+  m_Name: RightFirePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5432906646451408036
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 644081701106022970}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.3145, y: -0.1376, z: 1.021}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6510756885608305411}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6234210026229911476
 GameObject:
   m_ObjectHideFlags: 0
@@ -32,8 +63,10 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 6249875592383080731}
   - {fileID: 6604933603813955826}
   - {fileID: 890205501895962617}
+  - {fileID: 5432906646451408036}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1848524510115311684
@@ -51,7 +84,8 @@ MonoBehaviour:
   MoveSpeed: 5
   FireRate: 0.2
   BulletPrefab: {fileID: 5995108716016775410, guid: 56ac3d9a37a33464b9fc564041cb3bfd, type: 3}
-  FirePoint: {fileID: 890205501895962617}
+  LeftFirePoint: {fileID: 890205501895962617}
+  RightFirePoint: {fileID: 5432906646451408036}
   ColliderRadius: 0.5
   MaxHealth: 100
 --- !u!114 &4373055634622971462
@@ -102,7 +136,7 @@ GameObject:
   m_Component:
   - component: {fileID: 890205501895962617}
   m_Layer: 0
-  m_Name: FirePoint
+  m_Name: LeftFirePoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -117,12 +151,87 @@ Transform:
   m_GameObject: {fileID: 8017331847154013138}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.257, z: -0.008}
+  m_LocalPosition: {x: -1.3139, y: -0.1355, z: 1.028}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6510756885608305411}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &6245780934047100859
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6510756885608305411}
+    m_Modifications:
+    - target: {fileID: 1251918485771260, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_Name
+      value: SM_Ship_Bomber_03
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 64737606955095186, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+--- !u!4 &6249875592383080731 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4921508814669472, guid: 41a827e1c8551f143a8856c9331983b7, type: 3}
+  m_PrefabInstance: {fileID: 6245780934047100859}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6604263545074014624
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -134,6 +243,10 @@ PrefabInstance:
     - target: {fileID: 1961908230711334, guid: f120cec36bf54c94fb41c1bcd5534f3d, type: 3}
       propertyPath: m_Name
       value: SM_Ship_Fighter_02
+      objectReference: {fileID: 0}
+    - target: {fileID: 1961908230711334, guid: f120cec36bf54c94fb41c1bcd5534f3d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4079919548973394, guid: f120cec36bf54c94fb41c1bcd5534f3d, type: 3}
       propertyPath: m_LocalScale.x

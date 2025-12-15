@@ -9,7 +9,8 @@ public class PlayerAuthoring : MonoBehaviour
     public float MoveSpeed = 5f;
     public float FireRate = 0.5f;  // 초당 2발
     public GameObject BulletPrefab; // Inspector에서 할당
-    public Transform FirePoint;     // 총알 발사 위치 (Inspector에서 할당)
+    public Transform LeftFirePoint;  // 왼쪽 총알 발사 위치 (Inspector에서 할당)
+    public Transform RightFirePoint; // 오른쪽 총알 발사 위치 (Inspector에서 할당)
     public float ColliderRadius = 0.5f; // 플레이어 충돌 반경
     public float MaxHealth = 100f; // 최대 체력
 
@@ -47,25 +48,42 @@ public class PlayerAuthoring : MonoBehaviour
             {
                 FireRate = authoring.FireRate,
                 TimeSinceLastShot = 0f,
+                ShootFromLeft = true, // 왼쪽부터 시작
                 BulletPrefab = bulletPrefabEntity
             });
 
-            // 발사 위치 오프셋 추가
-            float3 firePointOffset;
-            if (authoring.FirePoint != null)
+            // 왼쪽 발사 위치 오프셋 추가
+            float3 leftFirePointOffset;
+            if (authoring.LeftFirePoint != null)
             {
-                // FirePoint Transform의 로컬 위치 사용
-                firePointOffset = authoring.FirePoint.localPosition;
+                leftFirePointOffset = authoring.LeftFirePoint.localPosition;
             }
             else
             {
-                // FirePoint가 없으면 기본값 (플레이어 앞쪽 약간 위)
-                firePointOffset = new float3(0, 0.5f, 1f);
+                // 기본값: 플레이어 왼쪽 날개 위치
+                leftFirePointOffset = new float3(-1f, 0, 1f);
             }
 
-            AddComponent(entity, new FirePointOffset
+            AddComponent(entity, new LeftFirePointOffset
             {
-                LocalOffset = firePointOffset
+                LocalOffset = leftFirePointOffset
+            });
+
+            // 오른쪽 발사 위치 오프셋 추가
+            float3 rightFirePointOffset;
+            if (authoring.RightFirePoint != null)
+            {
+                rightFirePointOffset = authoring.RightFirePoint.localPosition;
+            }
+            else
+            {
+                // 기본값: 플레이어 오른쪽 날개 위치
+                rightFirePointOffset = new float3(1f, 0, 1f);
+            }
+
+            AddComponent(entity, new RightFirePointOffset
+            {
+                LocalOffset = rightFirePointOffset
             });
 
             // PhysicsCollider 추가 (Sphere)
