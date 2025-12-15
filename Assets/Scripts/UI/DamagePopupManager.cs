@@ -61,16 +61,52 @@ public class DamagePopupManager : MonoBehaviour
         // 위치 설정 (월드 좌표)
         obj.transform.position = worldPosition + Vector3.up * 0.5f;
 
-        // 텍스트 설정
-        var tmp = obj.GetComponent<TextMeshPro>();
-        if (tmp != null)
+        string damageText = damage.ToString("F0");
+        Color damageColor = GetDamageColor(damage);
+
+        // 텍스트 설정 - 여러 방식으로 찾기 시도
+        // 1. 3D TextMeshPro (루트)
+        var tmp3D = obj.GetComponent<TextMeshPro>();
+        if (tmp3D != null)
         {
-            tmp.text = damage.ToString("F0");
-            tmp.color = GetDamageColor(damage);
+            tmp3D.text = damageText;
+            tmp3D.color = damageColor;
+            StartCoroutine(AnimatePopup3D(obj, tmp3D));
+            return;
         }
 
-        // 애니메이션 시작
-        StartCoroutine(AnimatePopup(obj, tmp));
+        // 2. 3D TextMeshPro (자식)
+        tmp3D = obj.GetComponentInChildren<TextMeshPro>();
+        if (tmp3D != null)
+        {
+            tmp3D.text = damageText;
+            tmp3D.color = damageColor;
+            StartCoroutine(AnimatePopup3D(obj, tmp3D));
+            return;
+        }
+
+        // 3. UI TextMeshProUGUI (루트 또는 자식)
+        var tmpUI = obj.GetComponentInChildren<TextMeshProUGUI>();
+        if (tmpUI != null)
+        {
+            tmpUI.text = damageText;
+            tmpUI.color = damageColor;
+            StartCoroutine(AnimatePopupUI(obj, tmpUI));
+            return;
+        }
+
+        // 4. 일반 TMP_Text (베이스 클래스)
+        var tmpBase = obj.GetComponentInChildren<TMP_Text>();
+        if (tmpBase != null)
+        {
+            tmpBase.text = damageText;
+            tmpBase.color = damageColor;
+            StartCoroutine(AnimatePopupBase(obj, tmpBase));
+            return;
+        }
+
+        Debug.LogWarning($"[DamagePopupManager] No TextMeshPro component found on {obj.name}!");
+        StartCoroutine(AnimatePopupSimple(obj));
     }
 
     private Color GetDamageColor(float damage)
@@ -84,11 +120,11 @@ public class DamagePopupManager : MonoBehaviour
             return Color.yellow;
     }
 
-    private IEnumerator AnimatePopup(GameObject obj, TextMeshPro tmp)
+    private IEnumerator AnimatePopup3D(GameObject obj, TextMeshPro tmp)
     {
         float elapsed = 0f;
         Vector3 startPos = obj.transform.position;
-        Color startColor = tmp != null ? tmp.color : Color.white;
+        Color startColor = tmp.color;
 
         while (elapsed < FadeTime)
         {
@@ -103,12 +139,114 @@ public class DamagePopupManager : MonoBehaviour
             obj.transform.localScale = Vector3.one * scale;
 
             // 페이드아웃
-            if (tmp != null)
+            Color c = startColor;
+            c.a = 1f - t;
+            tmp.color = c;
+
+            // 카메라 방향 바라보기 (빌보드)
+            if (mainCamera != null)
             {
-                Color c = startColor;
-                c.a = 1f - t;
-                tmp.color = c;
+                obj.transform.rotation = mainCamera.transform.rotation;
             }
+
+            yield return null;
+        }
+
+        // 풀로 반환
+        obj.SetActive(false);
+        pool.Enqueue(obj);
+    }
+
+    private IEnumerator AnimatePopupUI(GameObject obj, TextMeshProUGUI tmp)
+    {
+        float elapsed = 0f;
+        Vector3 startPos = obj.transform.position;
+        Color startColor = tmp.color;
+
+        while (elapsed < FadeTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / FadeTime;
+
+            // 위로 이동
+            obj.transform.position = startPos + Vector3.up * (FloatSpeed * t);
+
+            // 크기 변화
+            float scale = Mathf.Lerp(ScaleStart, ScaleEnd, Mathf.Sin(t * Mathf.PI));
+            obj.transform.localScale = Vector3.one * scale;
+
+            // 페이드아웃
+            Color c = startColor;
+            c.a = 1f - t;
+            tmp.color = c;
+
+            // 카메라 방향 바라보기 (빌보드)
+            if (mainCamera != null)
+            {
+                obj.transform.rotation = mainCamera.transform.rotation;
+            }
+
+            yield return null;
+        }
+
+        // 풀로 반환
+        obj.SetActive(false);
+        pool.Enqueue(obj);
+    }
+
+    private IEnumerator AnimatePopupBase(GameObject obj, TMP_Text tmp)
+    {
+        float elapsed = 0f;
+        Vector3 startPos = obj.transform.position;
+        Color startColor = tmp.color;
+
+        while (elapsed < FadeTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / FadeTime;
+
+            // 위로 이동
+            obj.transform.position = startPos + Vector3.up * (FloatSpeed * t);
+
+            // 크기 변화
+            float scale = Mathf.Lerp(ScaleStart, ScaleEnd, Mathf.Sin(t * Mathf.PI));
+            obj.transform.localScale = Vector3.one * scale;
+
+            // 페이드아웃
+            Color c = startColor;
+            c.a = 1f - t;
+            tmp.color = c;
+
+            // 카메라 방향 바라보기 (빌보드)
+            if (mainCamera != null)
+            {
+                obj.transform.rotation = mainCamera.transform.rotation;
+            }
+
+            yield return null;
+        }
+
+        // 풀로 반환
+        obj.SetActive(false);
+        pool.Enqueue(obj);
+    }
+
+    private IEnumerator AnimatePopupSimple(GameObject obj)
+    {
+        float elapsed = 0f;
+        Vector3 startPos = obj.transform.position;
+
+        while (elapsed < FadeTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / FadeTime;
+
+            // 위로 이동
+            obj.transform.position = startPos + Vector3.up * (FloatSpeed * t);
+
+            // 크기 변화
+            float scale = Mathf.Lerp(ScaleStart, ScaleEnd, Mathf.Sin(t * Mathf.PI));
+            obj.transform.localScale = Vector3.one * scale;
 
             // 카메라 방향 바라보기 (빌보드)
             if (mainCamera != null)
