@@ -103,24 +103,31 @@ Shader "Custom/NeonGrid"
                 // 그리드 패턴 생성
                 float grid = GridPattern(worldUV, _GridSize, _LineWidth);
 
-                // 카메라 거리 기반 페이드
+                // 카메라의 XZ 평면 위치만 사용 (Y축 높이 무시)
+                // 이렇게 하면 카메라가 위아래로 움직여도 페이드가 일정함
                 float3 cameraPos = GetCameraPositionWS();
-                float distanceToCamera = length(input.positionWS - cameraPos);
-                float fade = saturate(1.0 - (distanceToCamera / _FadeDistance));
+                float2 cameraXZ = cameraPos.xz;
+                float2 pixelXZ = input.positionWS.xz;
+                float distanceToCamera = length(pixelXZ - cameraXZ);
 
-                // 글로우 효과 (거리 기반)
-                float glow = pow(grid, _GlowIntensity) * fade;
+                // 부드러운 페이드 (smoothstep 사용으로 번쩍임 감소)
+                float fadeStart = _FadeDistance * 0.5; // 페이드 시작 거리
+                float fadeEnd = _FadeDistance;          // 완전 투명 거리
+                float fade = 1.0 - smoothstep(fadeStart, fadeEnd, distanceToCamera);
+
+                // 글로우 효과 (일정한 강도, 거리와 무관)
+                float glow = pow(grid, _GlowIntensity);
 
                 // 배경색과 그리드색 블렌딩
                 half3 color = lerp(_BackgroundColor.rgb, _GridColor.rgb, grid);
 
-                // Emission 추가 (네온 발광 효과)
+                // Emission 추가 (네온 발광 효과) - 거리와 무관하게 일정
                 half3 emission = _GridColor.rgb * glow * _EmissionStrength;
                 color += emission;
 
                 // 투명도 계산 (그리드 라인은 더 불투명, 배경은 더 투명)
                 float alpha = lerp(_Transparency * 0.3, _Transparency, grid);
-                alpha *= fade; // 거리에 따라 투명도 증가
+                alpha *= fade; // 거리에 따라 부드럽게 투명도 증가
 
                 // 최종 색상 (Alpha 포함)
                 half4 finalColor = half4(color, alpha);
