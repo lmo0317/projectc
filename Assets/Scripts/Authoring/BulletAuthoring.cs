@@ -22,6 +22,7 @@ public class BulletAuthoring : MonoBehaviour
 
             // Note: Ghost 설정은 Bullet Prefab에 GhostAuthoringComponent를 추가해야 함
             // Unity Editor: Bullet Prefab → Add Component → Ghost Authoring Component
+            // SupportedGhostModes = Predicted 로 설정 필요
 
             AddComponent(entity, new BulletTag());
             AddComponent(entity, new BulletSpeed { Value = authoring.Speed });
