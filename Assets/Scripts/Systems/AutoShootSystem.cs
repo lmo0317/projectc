@@ -24,7 +24,9 @@ public partial struct AutoShootSystem : ISystem
     {
         float deltaTime = SystemAPI.Time.DeltaTime;
 
-        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
+        // EndSimulation ECB 사용 - Entity 생성이 현재 프레임 끝에 즉시 실행됨
+        // BeginSimulation을 사용하면 다음 프레임 시작에 생성되어 위치가 뒤처짐
+        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
         // 살아있는 플레이어만 발사 (Simulate 태그 필터링, 죽은 플레이어 제외)
