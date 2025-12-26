@@ -41,13 +41,22 @@ public class HitEffectPool : MonoBehaviour
     /// </summary>
     public void PlayEffect(Vector3 position)
     {
-        if (pool.Count == 0)
+        GameObject obj = null;
+
+        // 유효한 오브젝트를 찾을 때까지 풀에서 꺼냄
+        while (pool.Count > 0)
         {
-            Debug.LogWarning("[HitEffectPool] Pool exhausted!");
-            return;
+            obj = pool.Dequeue();
+            if (obj != null) break;
         }
 
-        var obj = pool.Dequeue();
+        // 유효한 오브젝트가 없으면 새로 생성
+        if (obj == null)
+        {
+            if (HitEffectPrefab == null) return;
+            obj = Instantiate(HitEffectPrefab, transform);
+        }
+
         obj.transform.position = position;
         obj.SetActive(true);
 
