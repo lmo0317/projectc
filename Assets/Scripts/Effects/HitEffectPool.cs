@@ -73,8 +73,17 @@ public class HitEffectPool : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
 
-        // 오브젝트가 이미 파괴되었는지 확인
-        if (obj == null) yield break;
+        // 오브젝트가 이미 파괴되었으면 새로 생성해서 풀에 추가
+        if (obj == null)
+        {
+            if (HitEffectPrefab != null)
+            {
+                var newObj = Instantiate(HitEffectPrefab, transform);
+                newObj.SetActive(false);
+                pool.Enqueue(newObj);
+            }
+            yield break;
+        }
 
         obj.SetActive(false);
         pool.Enqueue(obj);

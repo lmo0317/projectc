@@ -737,7 +737,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71e3e9a14590bbb46acb6b0ba68b0812, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitEffectPool
-  HitEffectPrefab: {fileID: 725748389856807714, guid: 4bda94453d2ca7444a0fff05b2d425f5, type: 3}
+  HitEffectPrefab: {fileID: 9127653965126434405, guid: 4ec21026a9b875843a9319e3f69080e2, type: 3}
   PoolSize: 30
 --- !u!1 &473510299
 GameObject:
