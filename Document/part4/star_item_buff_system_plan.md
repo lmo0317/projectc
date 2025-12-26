@@ -445,7 +445,497 @@ Assets/Scripts/
 
 ---
 
-## 10. 확장 가능성
+## 10. 버프 효과 아키텍처 (확장 가능한 설계)
+
+### 10.1 설계 원칙
+
+버프 시스템은 다음 원칙을 따릅니다:
+
+1. **단일 책임 원칙 (SRP)**: 각 버프 효과는 하나의 책임만 가짐
+2. **개방-폐쇄 원칙 (OCP)**: 새 버프 추가 시 기존 코드 수정 없이 확장 가능
+3. **데이터 주도 설계**: 버프 수치는 코드가 아닌 데이터로 관리
+4. **ECS 친화적**: Unity DOTS 패턴과 자연스럽게 통합
+
+### 10.2 아키텍처 개요
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         버프 시스템 아키텍처                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────┐                                                        │
+│  │ BuffDefinition  │ ← ScriptableObject (버프 메타데이터 정의)               │
+│  │ - BuffType      │                                                        │
+│  │ - TargetStat    │                                                        │
+│  │ - LevelValues[] │                                                        │
+│  └────────┬────────┘                                                        │
+│           │                                                                 │
+│           ▼                                                                 │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐       │
+│  │ BuffRegistry    │ ──→ │ IBuffEffect     │ ←── │ BuffEffectBase  │       │
+│  │ (Singleton)     │     │ (Interface)     │     │ (Abstract)      │       │
+│  └────────┬────────┘     └─────────────────┘     └────────┬────────┘       │
+│           │                       ▲                       │                 │
+│           │           ┌───────────┼───────────┐           │                 │
+│           │           │           │           │           │                 │
+│           │    ┌──────┴──┐ ┌──────┴──┐ ┌──────┴──┐        │                 │
+│           │    │ Damage  │ │ Speed   │ │ Magnet  │ ...    │ (구체 구현체)    │
+│           │    │ Effect  │ │ Effect  │ │ Effect  │        │                 │
+│           │    └─────────┘ └─────────┘ └─────────┘        │                 │
+│           │                                               │                 │
+│           ▼                                               ▼                 │
+│  ┌─────────────────────────────────────────────────────────────────┐       │
+│  │                    BuffModifierSystem (ECS)                      │       │
+│  │  - 매 프레임 활성 버프 순회                                        │       │
+│  │  - IBuffEffect.CalculateModifier() 호출                          │       │
+│  │  - 최종 스탯 = 기본값 × (1 + 합산 배율) + 가산 보너스               │       │
+│  └─────────────────────────────────────────────────────────────────┘       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 10.3 핵심 인터페이스 및 기본 클래스
+
+#### 10.3.1 버프 효과 인터페이스
+
+```csharp
+// Assets/Scripts/Buffs/Core/IBuffEffect.cs
+public interface IBuffEffect
+{
+    BuffType BuffType { get; }
+    StatType TargetStat { get; }
+    StatModifier CalculateModifier(int level, in BuffContext context);
+    void OnApply(int level, ref EntityCommandBuffer ecb, Entity target);
+    void OnLevelUp(int oldLevel, int newLevel, ref EntityCommandBuffer ecb, Entity target);
+}
+```
+
+#### 10.3.2 스탯 수정자 구조체
+
+```csharp
+// Assets/Scripts/Buffs/Core/StatModifier.cs
+public struct StatModifier
+{
+    public float Additive;        // 가산 보너스 (예: MaxHealth +50)
+    public float Multiplicative;  // 승산 배율 (0.1 = 10% 증가)
+    public float FinalMultiplier; // 최종 승산 (예: 치명타 2배)
+
+    public static StatModifier None => new StatModifier
+    { Additive = 0f, Multiplicative = 0f, FinalMultiplier = 1f };
+
+    public static StatModifier Percent(float percent) => new StatModifier
+    { Additive = 0f, Multiplicative = percent / 100f, FinalMultiplier = 1f };
+
+    public static StatModifier Flat(float value) => new StatModifier
+    { Additive = value, Multiplicative = 0f, FinalMultiplier = 1f };
+}
+```
+
+#### 10.3.3 스탯 타입 열거형
+
+```csharp
+// Assets/Scripts/Buffs/Core/StatType.cs
+public enum StatType
+{
+    None = 0,
+    // 공격 관련
+    Damage = 1, FireRate = 2, MissileCount = 3,
+    CriticalChance = 4, CriticalMultiplier = 5,
+    // 이동 관련
+    MovementSpeed = 10,
+    // 생존 관련
+    MaxHealth = 20, HealthRegen = 21,
+    // 유틸리티
+    MagnetRange = 30, MagnetSpeed = 31,
+}
+```
+
+---
+
+### 10.4 추상 기본 클래스
+
+```csharp
+// Assets/Scripts/Buffs/Core/BuffEffectBase.cs
+public abstract class BuffEffectBase : IBuffEffect
+{
+    public abstract BuffType BuffType { get; }
+    public abstract StatType TargetStat { get; }
+    protected abstract float[] LevelValues { get; }
+    protected virtual ModifierType ModifierType => ModifierType.Multiplicative;
+
+    public virtual StatModifier CalculateModifier(int level, in BuffContext context)
+    {
+        if (level <= 0 || level > LevelValues.Length)
+            return StatModifier.None;
+
+        float value = LevelValues[level - 1];
+        return ModifierType switch
+        {
+            ModifierType.Additive => StatModifier.Flat(value),
+            ModifierType.Multiplicative => StatModifier.Percent(value),
+            _ => StatModifier.None
+        };
+    }
+
+    public virtual void OnApply(int level, ref EntityCommandBuffer ecb, Entity target) { }
+    public virtual void OnLevelUp(int oldLevel, int newLevel,
+                                   ref EntityCommandBuffer ecb, Entity target) { }
+}
+
+public enum ModifierType { Additive, Multiplicative }
+```
+
+---
+
+### 10.5 구체적인 버프 효과 구현 예시
+
+#### 데미지 버프 (승산 방식)
+
+```csharp
+// Assets/Scripts/Buffs/Effects/DamageBuffEffect.cs
+public class DamageBuffEffect : BuffEffectBase
+{
+    public override BuffType BuffType => BuffType.Damage;
+    public override StatType TargetStat => StatType.Damage;
+    protected override float[] LevelValues => new[] { 10f, 20f, 35f, 50f, 75f };
+    protected override ModifierType ModifierType => ModifierType.Multiplicative;
+}
+```
+
+#### 미사일 개수 버프 (가산 방식)
+
+```csharp
+// Assets/Scripts/Buffs/Effects/MissileCountBuffEffect.cs
+public class MissileCountBuffEffect : BuffEffectBase
+{
+    public override BuffType BuffType => BuffType.MissileCount;
+    public override StatType TargetStat => StatType.MissileCount;
+    protected override float[] LevelValues => new[] { 1f, 2f, 3f, 4f, 6f };
+    protected override ModifierType ModifierType => ModifierType.Additive;
+}
+```
+
+#### 치명타 버프 (복합 효과 - 확률 + 배율)
+
+```csharp
+// Assets/Scripts/Buffs/Effects/CriticalBuffEffect.cs
+public class CriticalBuffEffect : IBuffEffect
+{
+    public BuffType BuffType => BuffType.Critical;
+    public StatType TargetStat => StatType.CriticalChance;
+
+    private static readonly float[] ChanceValues = { 5f, 10f, 15f, 20f, 30f };
+    private static readonly float[] MultiplierValues = { 2.0f, 2.0f, 2.5f, 2.5f, 3.0f };
+
+    public StatModifier CalculateModifier(int level, in BuffContext context)
+    {
+        if (level <= 0 || level > ChanceValues.Length)
+            return StatModifier.None;
+
+        return new StatModifier
+        {
+            Additive = ChanceValues[level - 1],
+            Multiplicative = 0f,
+            FinalMultiplier = MultiplierValues[level - 1]
+        };
+    }
+
+    public void OnApply(int level, ref EntityCommandBuffer ecb, Entity target) { }
+    public void OnLevelUp(int oldLevel, int newLevel,
+                          ref EntityCommandBuffer ecb, Entity target) { }
+}
+```
+
+#### 최대 체력 버프 (즉시 효과 포함)
+
+```csharp
+// Assets/Scripts/Buffs/Effects/MaxHealthBuffEffect.cs
+public class MaxHealthBuffEffect : BuffEffectBase
+{
+    public override BuffType BuffType => BuffType.MaxHealth;
+    public override StatType TargetStat => StatType.MaxHealth;
+    protected override float[] LevelValues => new[] { 20f, 40f, 70f, 100f, 150f };
+    protected override ModifierType ModifierType => ModifierType.Additive;
+
+    public override void OnLevelUp(int oldLevel, int newLevel,
+                                    ref EntityCommandBuffer ecb, Entity target)
+    {
+        // 최대 체력 증가 시 현재 체력도 증가분만큼 회복
+        float oldBonus = oldLevel > 0 ? LevelValues[oldLevel - 1] : 0f;
+        float healthGain = LevelValues[newLevel - 1] - oldBonus;
+        ecb.AddComponent(target, new HealRequest { Amount = healthGain });
+    }
+}
+```
+
+---
+
+### 10.6 버프 레지스트리 (중앙 관리)
+
+```csharp
+// Assets/Scripts/Buffs/Core/BuffRegistry.cs
+public class BuffRegistry
+{
+    private static BuffRegistry _instance;
+    public static BuffRegistry Instance => _instance ??= new BuffRegistry();
+
+    private readonly Dictionary<BuffType, IBuffEffect> _effects = new();
+    private readonly Dictionary<StatType, List<BuffType>> _statToBuffs = new();
+
+    private BuffRegistry()
+    {
+        Register(new DamageBuffEffect());
+        Register(new SpeedBuffEffect());
+        Register(new FireRateBuffEffect());
+        Register(new MissileCountBuffEffect());
+        Register(new MagnetBuffEffect());
+        Register(new HealthRegenBuffEffect());
+        Register(new MaxHealthBuffEffect());
+        Register(new CriticalBuffEffect());
+    }
+
+    public void Register(IBuffEffect effect)
+    {
+        _effects[effect.BuffType] = effect;
+        if (!_statToBuffs.TryGetValue(effect.TargetStat, out var list))
+        {
+            list = new List<BuffType>();
+            _statToBuffs[effect.TargetStat] = list;
+        }
+        list.Add(effect.BuffType);
+    }
+
+    public IBuffEffect GetEffect(BuffType type) =>
+        _effects.TryGetValue(type, out var effect) ? effect : null;
+}
+```
+
+---
+
+### 10.7 스탯 계산 시스템 (ECS 통합)
+
+#### 스탯 수정자 컴포넌트
+
+```csharp
+// Assets/Scripts/Components/Buffs/StatModifiers.cs
+[GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
+public struct StatModifiers : IComponentData
+{
+    [GhostField] public float DamageMultiplier;      // 1.0 = 100%
+    [GhostField] public float FireRateMultiplier;    // 0.8 = 20% 빠름
+    [GhostField] public int BonusMissileCount;
+    [GhostField] public float SpeedMultiplier;
+    [GhostField] public float BonusMaxHealth;
+    [GhostField] public float HealthRegenPerSecond;
+    [GhostField] public float CriticalChance;        // 0~100
+    [GhostField] public float CriticalMultiplier;    // 2.0 = 2배
+    [GhostField] public float MagnetRange;
+
+    public static StatModifiers Default => new StatModifiers
+    {
+        DamageMultiplier = 1f, FireRateMultiplier = 1f, BonusMissileCount = 0,
+        SpeedMultiplier = 1f, BonusMaxHealth = 0f, HealthRegenPerSecond = 0f,
+        CriticalChance = 0f, CriticalMultiplier = 1f, MagnetRange = 0f
+    };
+}
+```
+
+#### 스탯 계산 시스템
+
+```csharp
+// Assets/Scripts/Systems/Buffs/StatCalculationSystem.cs
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateBefore(typeof(AutoShootSystem))]
+[UpdateBefore(typeof(PlayerMovementSystem))]
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[BurstCompile]
+public partial struct StatCalculationSystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        foreach (var (buffs, modifiers) in
+                 SystemAPI.Query<RefRO<PlayerBuffLevels>, RefRW<StatModifiers>>()
+                     .WithAll<PlayerTag>())
+        {
+            var levels = buffs.ValueRO;
+            ref var stats = ref modifiers.ValueRW;
+
+            stats.DamageMultiplier = 1f + GetDamageMultiplier(levels.DamageLevel);
+            stats.FireRateMultiplier = 1f - GetFireRateReduction(levels.FireRateLevel);
+            stats.BonusMissileCount = GetMissileBonus(levels.MissileCountLevel);
+            stats.SpeedMultiplier = 1f + GetSpeedMultiplier(levels.SpeedLevel);
+            stats.BonusMaxHealth = GetMaxHealthBonus(levels.MaxHealthLevel);
+            stats.HealthRegenPerSecond = GetHealthRegen(levels.HealthRegenLevel);
+            stats.MagnetRange = GetMagnetRange(levels.MagnetLevel);
+
+            var (chance, mult) = GetCriticalStats(levels.CriticalLevel);
+            stats.CriticalChance = chance;
+            stats.CriticalMultiplier = mult;
+        }
+    }
+
+    // Burst 호환 인라인 함수들
+    private static float GetDamageMultiplier(int level) => level switch
+    { 1 => 0.10f, 2 => 0.20f, 3 => 0.35f, 4 => 0.50f, 5 => 0.75f, _ => 0f };
+
+    private static float GetFireRateReduction(int level) => level switch
+    { 1 => 0.15f, 2 => 0.30f, 3 => 0.45f, 4 => 0.60f, 5 => 0.80f, _ => 0f };
+
+    private static int GetMissileBonus(int level) => level switch
+    { 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 6, _ => 0 };
+
+    private static float GetSpeedMultiplier(int level) => level switch
+    { 1 => 0.10f, 2 => 0.20f, 3 => 0.30f, 4 => 0.40f, 5 => 0.50f, _ => 0f };
+
+    private static float GetMaxHealthBonus(int level) => level switch
+    { 1 => 20f, 2 => 40f, 3 => 70f, 4 => 100f, 5 => 150f, _ => 0f };
+
+    private static float GetHealthRegen(int level) => level switch
+    { 1 => 1f, 2 => 2f, 3 => 3f, 4 => 5f, 5 => 8f, _ => 0f };
+
+    private static float GetMagnetRange(int level) => level switch
+    { 1 => 3f, 2 => 5f, 3 => 7f, 4 => 10f, 5 => 15f, _ => 0f };
+
+    private static (float, float) GetCriticalStats(int level) => level switch
+    { 1 => (5f, 2.0f), 2 => (10f, 2.0f), 3 => (15f, 2.5f),
+      4 => (20f, 2.5f), 5 => (30f, 3.0f), _ => (0f, 1f) };
+}
+```
+
+---
+
+### 10.8 기존 시스템에 버프 적용 예시
+
+#### AutoShootSystem 수정
+
+```csharp
+foreach (var (shootConfig, transform, modifiers) in
+         SystemAPI.Query<RefRW<AutoShootConfig>, RefRO<LocalTransform>, RefRO<StatModifiers>>()
+             .WithAll<PlayerTag>().WithDisabled<PlayerDead>())
+{
+    float effectiveFireRate = shootConfig.ValueRO.BaseFireRate * modifiers.ValueRO.FireRateMultiplier;
+    shootConfig.ValueRW.TimeSinceLastShot += deltaTime;
+
+    if (shootConfig.ValueRW.TimeSinceLastShot >= effectiveFireRate)
+    {
+        shootConfig.ValueRW.TimeSinceLastShot = 0f;
+        int missileCount = shootConfig.ValueRO.BaseMissileCount + modifiers.ValueRO.BonusMissileCount;
+        for (int i = 0; i < missileCount; i++) { /* 미사일 발사 */ }
+    }
+}
+```
+
+#### BulletHitSystem 데미지 계산
+
+```csharp
+float finalDamage = baseDamage * modifiers.DamageMultiplier;
+
+if (modifiers.CriticalChance > 0f && random.NextFloat(0f, 100f) < modifiers.CriticalChance)
+{
+    finalDamage *= modifiers.CriticalMultiplier;
+    // 치명타 이펙트 RPC 전송
+}
+enemyHealth.ValueRW.Value -= finalDamage;
+```
+
+---
+
+### 10.9 버프 데이터 설정 (ScriptableObject)
+
+```csharp
+// Assets/Scripts/Buffs/Data/BuffDefinitionSO.cs
+[CreateAssetMenu(fileName = "BuffDefinition", menuName = "Buffs/Buff Definition")]
+public class BuffDefinitionSO : ScriptableObject
+{
+    public BuffType BuffType;
+    public StatType TargetStat;
+    public string DisplayName;
+    public string Description;
+    public Sprite Icon;
+    public float[] LevelValues = new float[5];
+    public ModifierType ModifierType = ModifierType.Multiplicative;
+}
+
+// Assets/Scripts/Buffs/Data/BuffDatabaseSO.cs
+[CreateAssetMenu(fileName = "BuffDatabase", menuName = "Buffs/Buff Database")]
+public class BuffDatabaseSO : ScriptableObject
+{
+    public BuffDefinitionSO[] Buffs;
+    private Dictionary<BuffType, BuffDefinitionSO> _lookup;
+
+    public void Initialize() => _lookup = Buffs.ToDictionary(b => b.BuffType);
+    public BuffDefinitionSO GetDefinition(BuffType type) =>
+        _lookup.TryGetValue(type, out var def) ? def : null;
+}
+```
+
+---
+
+### 10.10 확장 가이드: 새 버프 추가 방법
+
+| Step | 작업 | 설명 |
+|------|-----|------|
+| 1 | BuffType enum 추가 | `Shield = 8` |
+| 2 | StatType 추가 (필요시) | `ShieldAmount = 40` |
+| 3 | 효과 클래스 구현 | `ShieldBuffEffect : BuffEffectBase` |
+| 4 | BuffRegistry 등록 | `Register(new ShieldBuffEffect())` |
+| 5 | PlayerBuffLevels 필드 추가 | `[GhostField] public int ShieldLevel` |
+| 6 | StatModifiers 필드 추가 | `[GhostField] public float ShieldAmount` |
+| 7 | 해당 시스템 수정 | `ShieldDamageSystem`에서 처리 |
+
+---
+
+### 10.11 시스템 실행 순서
+
+```
+Frame Start
+    │
+    ▼
+┌────────────────────────────────────┐
+│  BuffLevelChangeSystem             │ ← RPC 처리, 레벨 업데이트
+└────────────────────────────────────┘
+    │
+    ▼
+┌────────────────────────────────────┐
+│  StatCalculationSystem             │ ← 버프 레벨 → StatModifiers
+└────────────────────────────────────┘
+    │
+    ▼
+┌────────────────────────────────────┐
+│  HealthRegenSystem                 │ ← 체력 재생 적용
+└────────────────────────────────────┘
+    │
+    ▼
+┌────────────────────────────────────┐
+│  Game Logic Systems                │ ← 버프 적용된 스탯 사용
+│  - AutoShootSystem                 │
+│  - PlayerMovementSystem            │
+│  - MagnetSystem                    │
+│  - BulletHitSystem                 │
+└────────────────────────────────────┘
+    │
+    ▼
+Frame End
+```
+
+---
+
+### 10.12 장점 요약
+
+| 원칙 | 구현 방법 | 이점 |
+|-----|----------|-----|
+| **단일 책임 (SRP)** | 각 버프 = 독립된 클래스 | 버프 수정 시 다른 버프 영향 없음 |
+| **개방-폐쇄 (OCP)** | IBuffEffect + BuffRegistry | 새 버프 추가 시 기존 코드 수정 불필요 |
+| **의존성 역전 (DIP)** | 인터페이스 의존 | 구체 구현 교체 용이 |
+| **데이터 주도** | ScriptableObject 분리 | 밸런싱 시 코드 수정 불필요 |
+| **ECS 호환** | StatModifiers + Burst | 고성능 + 네트워크 동기화 |
+
+---
+
+## 11. 확장 가능성
 
 - **버프 타입 추가**: BuffType enum에 추가만 하면 됨
 - **시너지 효과**: 특정 버프 조합 시 추가 효과
