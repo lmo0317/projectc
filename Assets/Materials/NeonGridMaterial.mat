@@ -25,12 +25,12 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _EmissionStrength: 2
+    - _EmissionStrength: 8
     - _FadeDistance: 100
     - _GlowIntensity: 3
     - _GridSize: 0.5
     - _LineWidth: 0.05
-    - _Transparency: 0.3
+    - _Transparency: 0.01
     m_Colors:
     - _BackgroundColor: {r: 0, g: 0, b: 0.1, a: 1}
     - _GridColor: {r: 0.9620247, g: 0, b: 1, a: 1}

@@ -73,6 +73,9 @@ public class HitEffectPool : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
 
+        // 오브젝트가 이미 파괴되었는지 확인
+        if (obj == null) yield break;
+
         obj.SetActive(false);
         pool.Enqueue(obj);
     }

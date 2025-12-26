@@ -737,7 +737,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71e3e9a14590bbb46acb6b0ba68b0812, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitEffectPool
-  HitEffectPrefab: {fileID: 1597674098403351144, guid: ec8d37ea9ca95a34494436b615014739, type: 3}
+  HitEffectPrefab: {fileID: 725748389856807714, guid: 4bda94453d2ca7444a0fff05b2d425f5, type: 3}
   PoolSize: 30
 --- !u!1 &473510299
 GameObject:
@@ -1612,7 +1612,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 244b07ac0898669479f8614e4274d735, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerFollowCamera
-  Offset: {x: 0, y: 15, z: -10}
+  Offset: {x: 0, y: 20, z: -15}
   SmoothSpeed: 5
   FixedRotation: {x: 60, y: 0, z: 0}
 --- !u!1 &1921994520
