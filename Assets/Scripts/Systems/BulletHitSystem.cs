@@ -27,6 +27,9 @@ public partial struct BulletHitSystem : ISystem
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
+        // Star 스폰 설정 가져오기 (없으면 스폰 안 함)
+        bool hasStarSpawnConfig = SystemAPI.TryGetSingletonRW<StarSpawnConfig>(out var starSpawnConfig);
+
         // 모든 총알에 대해
         foreach (var (bulletTransform, bulletEntity) in
                  SystemAPI.Query<RefRO<LocalTransform>>()
@@ -65,6 +68,12 @@ public partial struct BulletHitSystem : ISystem
                     {
                         ecb.DestroyEntity(enemyEntity);
 
+                        // Star 아이템 스폰
+                        if (hasStarSpawnConfig && starSpawnConfig.ValueRO.StarPrefab != Entity.Null)
+                        {
+                            SpawnStar(ref ecb, ref starSpawnConfig.ValueRW, enemyPos);
+                        }
+
                         // RPC 생성: 모든 Client + Server에게 KillCount +1 브로드캐스트
                         var rpcEntity = ecb.CreateEntity();
                         ecb.AddComponent(rpcEntity, new KillCountRpc
@@ -84,5 +93,37 @@ public partial struct BulletHitSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+
+    /// <summary>
+    /// Star 아이템 스폰
+    /// </summary>
+    private void SpawnStar(ref EntityCommandBuffer ecb, ref StarSpawnConfig config, float3 position)
+    {
+        var starEntity = ecb.Instantiate(config.StarPrefab);
+
+        // 랜덤 방향으로 튀어오르는 속도 계산
+        float angle = config.RandomGenerator.NextFloat(0f, math.PI * 2f);
+        float force = config.RandomGenerator.NextFloat(config.SpawnForceMin, config.SpawnForceMax);
+        float horizontalForce = config.RandomGenerator.NextFloat(0f, config.SpreadRadius);
+
+        float3 velocity = new float3(
+            math.cos(angle) * horizontalForce,
+            force,  // 위로 튀어오름
+            math.sin(angle) * horizontalForce
+        );
+
+        // 스폰 위치 설정
+        ecb.SetComponent(starEntity, LocalTransform.FromPosition(position));
+
+        // 이동 컴포넌트 추가 (프리팹에 없을 수 있으므로 AddComponent 사용)
+        ecb.AddComponent(starEntity, new StarMovement
+        {
+            Velocity = velocity,
+            Gravity = 15f,
+            GroundY = 0f,
+            BounceDamping = 0.5f,
+            IsSettled = false
+        });
     }
 }

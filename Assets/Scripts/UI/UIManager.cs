@@ -11,6 +11,7 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI HealthText;
     public TextMeshProUGUI SurvivalTimeText;
     public TextMeshProUGUI KillCountText;
+    public TextMeshProUGUI StarPointsText;
 
     [Header("Game Over UI")]
     public GameObject GameOverPanel;
@@ -71,6 +72,14 @@ public class UIManager : MonoBehaviour
         if (KillCountText != null)
         {
             KillCountText.text = $"Kills: {kills}";
+        }
+    }
+
+    public void UpdateStarPoints(int current, int threshold)
+    {
+        if (StarPointsText != null)
+        {
+            StarPointsText.text = $"★ {current} / {threshold}";
         }
     }
 

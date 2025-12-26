@@ -100,6 +100,15 @@ public class PlayerAuthoring : MonoBehaviour
                 }
             );
             AddComponent(entity, new PhysicsCollider { Value = collider });
+
+            // Star 포인트 시스템 초기화
+            AddComponent(entity, new PlayerStarPoints
+            {
+                CurrentPoints = 0,
+                TotalCollected = 0,
+                NextBuffThreshold = 10, // 첫 버프는 10포인트
+                BuffSelectionCount = 0
+            });
         }
     }
 }

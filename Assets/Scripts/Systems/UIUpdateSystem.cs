@@ -34,14 +34,15 @@ public partial class UIUpdateSystem : SystemBase
 
         var myNetworkId = SystemAPI.GetSingleton<NetworkId>().Value;
 
-        // 1. 내 플레이어 체력 업데이트 (GhostOwner로 필터링)
-        foreach (var (health, ghostOwner) in
-                 SystemAPI.Query<RefRO<PlayerHealth>, RefRO<GhostOwner>>())
+        // 1. 내 플레이어 체력 및 Star 포인트 업데이트 (GhostOwner로 필터링)
+        foreach (var (health, starPoints, ghostOwner) in
+                 SystemAPI.Query<RefRO<PlayerHealth>, RefRO<PlayerStarPoints>, RefRO<GhostOwner>>())
         {
             if (ghostOwner.ValueRO.NetworkId != myNetworkId)
                 continue;
 
             uiManager.UpdateHealth(health.ValueRO.CurrentHealth, health.ValueRO.MaxHealth);
+            uiManager.UpdateStarPoints(starPoints.ValueRO.CurrentPoints, starPoints.ValueRO.NextBuffThreshold);
             break;
         }
 
