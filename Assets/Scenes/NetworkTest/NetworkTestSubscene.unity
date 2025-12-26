@@ -211,7 +211,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0cab0e08d213a746a588f37dd29ef29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StarSpawnAuthoring
-  StarPrefab: {fileID: 4907540241231961188, guid: 5c6ef5228c4bb0d4387b6028bd4b4015, type: 3}
+  StarPrefab: {fileID: 1584373564542064, guid: df6361ba1782f2e4fb9d62d0be9ea554, type: 3}
   SpawnForceMin: 3
   SpawnForceMax: 5
   SpreadRadius: 0.5
