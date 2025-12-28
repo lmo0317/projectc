@@ -1,5 +1,3 @@
-using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -12,20 +10,19 @@ using Unity.Transforms;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(BulletMovementSystem))]
 [UpdateAfter(typeof(EnemyChaseSystem))]
-[BurstCompile]
 public partial struct BulletHitSystem : ISystem
 {
-    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<BulletTag>();
         state.RequireForUpdate<EnemyTag>();
     }
 
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        // Ghost 프리팹 인스턴스화를 위해 BeginSimulationEntityCommandBufferSystem 사용
+        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
         // Star 스폰 설정 가져오기 (없으면 스폰 안 함)
         bool hasStarSpawnConfig = SystemAPI.TryGetSingletonRW<StarSpawnConfig>(out var starSpawnConfig);
@@ -69,9 +66,14 @@ public partial struct BulletHitSystem : ISystem
                         ecb.DestroyEntity(enemyEntity);
 
                         // Star 아이템 스폰
-                        if (hasStarSpawnConfig && starSpawnConfig.ValueRO.StarPrefab != Entity.Null)
+                        if (hasStarSpawnConfig)
                         {
+                            UnityEngine.Debug.Log($"[BulletHit] Spawning Star at {enemyPos}");
                             SpawnStar(ref ecb, ref starSpawnConfig.ValueRW, enemyPos);
+                        }
+                        else
+                        {
+                            UnityEngine.Debug.Log("[BulletHit] No StarSpawnConfig!");
                         }
 
                         // RPC 생성: 모든 Client + Server에게 KillCount +1 브로드캐스트
@@ -91,16 +93,16 @@ public partial struct BulletHitSystem : ISystem
             }
         }
 
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
+        // BeginSimulationEntityCommandBufferSystem이 자동으로 Playback 처리
     }
 
     /// <summary>
-    /// Star 아이템 스폰
+    /// Star 아이템 스폰 (서버에서 직접 엔티티 생성 + 클라이언트에 RPC 전송)
     /// </summary>
     private void SpawnStar(ref EntityCommandBuffer ecb, ref StarSpawnConfig config, float3 position)
     {
-        var starEntity = ecb.Instantiate(config.StarPrefab);
+        // 서버에서 직접 엔티티 생성 (Ghost 프리팹 대신)
+        var starEntity = ecb.CreateEntity();
 
         // 랜덤 방향으로 튀어오르는 속도 계산
         float angle = config.RandomGenerator.NextFloat(0f, math.PI * 2f);
@@ -113,10 +115,14 @@ public partial struct BulletHitSystem : ISystem
             math.sin(angle) * horizontalForce
         );
 
-        // 스폰 위치 설정
-        ecb.SetComponent(starEntity, LocalTransform.FromPosition(position));
+        // Star ID 생성 (간단하게 랜덤 사용)
+        int starId = config.RandomGenerator.NextInt(1, int.MaxValue);
 
-        // 이동 컴포넌트 추가 (프리팹에 없을 수 있으므로 AddComponent 사용)
+        // 서버 엔티티에 필수 컴포넌트 추가
+        ecb.AddComponent(starEntity, new StarTag());
+        ecb.AddComponent(starEntity, new StarValue { Value = 1 });
+        ecb.AddComponent(starEntity, new StarId { Value = starId });
+        ecb.AddComponent(starEntity, LocalTransform.FromPosition(position));
         ecb.AddComponent(starEntity, new StarMovement
         {
             Velocity = velocity,
@@ -125,5 +131,15 @@ public partial struct BulletHitSystem : ISystem
             BounceDamping = 0.5f,
             IsSettled = false
         });
+
+        // 클라이언트에 Star 스폰 RPC 전송
+        var rpcEntity = ecb.CreateEntity();
+        ecb.AddComponent(rpcEntity, new StarSpawnRpc
+        {
+            StarId = starId,
+            Position = position,
+            Velocity = velocity
+        });
+        ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
     }
 }
