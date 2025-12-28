@@ -1,6 +1,5 @@
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
 
@@ -20,7 +19,6 @@ public partial struct ClientStarVisualSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
-        float deltaTime = SystemAPI.Time.DeltaTime;
 
         // Star 스폰 설정 가져오기
         if (!SystemAPI.TryGetSingletonRW<StarSpawnConfig>(out var starSpawnConfig))
@@ -42,16 +40,6 @@ public partial struct ClientStarVisualSystem : ISystem
             ecb.AddComponent(starVisual, new ClientStarVisual
             {
                 StarId = rpc.ValueRO.StarId
-            });
-
-            // 이동 컴포넌트 추가
-            ecb.AddComponent(starVisual, new StarMovement
-            {
-                Velocity = rpc.ValueRO.Velocity,
-                Gravity = 15f,
-                GroundY = 0f,
-                BounceDamping = 0.5f,
-                IsSettled = false
             });
 
             // RPC 엔티티 삭제
@@ -82,56 +70,16 @@ public partial struct ClientStarVisualSystem : ISystem
             ecb.DestroyEntity(rpcEntity);
         }
 
-        // 3. StarCollectRpc 처리 - 수집 이펙트 (기존 로직 유지)
+        // 3. StarCollectRpc 처리 - 수집 이펙트
         foreach (var (rpc, rpcEntity) in
                  SystemAPI.Query<RefRO<StarCollectRpc>>()
                      .WithAll<ReceiveRpcCommandRequest>()
                      .WithEntityAccess())
         {
             // TODO: 수집 이펙트 표시
-            // 현재는 단순히 RPC 엔티티만 삭제
 
             // RPC 엔티티 삭제
             ecb.DestroyEntity(rpcEntity);
-        }
-
-        // 4. 클라이언트 Star 물리 업데이트 (서버와 동일한 로직)
-        foreach (var (transform, movement) in
-                 SystemAPI.Query<RefRW<LocalTransform>, RefRW<StarMovement>>()
-                     .WithAll<ClientStarVisual>())
-        {
-            if (movement.ValueRO.IsSettled)
-                continue;
-
-            // 중력 적용
-            float3 velocity = movement.ValueRO.Velocity;
-            velocity.y -= movement.ValueRO.Gravity * deltaTime;
-
-            // 위치 업데이트
-            float3 newPos = transform.ValueRO.Position + velocity * deltaTime;
-
-            // 바닥 충돌 체크
-            if (newPos.y <= movement.ValueRO.GroundY)
-            {
-                newPos.y = movement.ValueRO.GroundY;
-
-                // 바운스
-                if (math.abs(velocity.y) > 0.5f)
-                {
-                    velocity.y = -velocity.y * movement.ValueRO.BounceDamping;
-                    velocity.x *= 0.8f;
-                    velocity.z *= 0.8f;
-                }
-                else
-                {
-                    // 정착
-                    velocity = float3.zero;
-                    movement.ValueRW.IsSettled = true;
-                }
-            }
-
-            movement.ValueRW.Velocity = velocity;
-            transform.ValueRW.Position = newPos;
         }
 
         ecb.Playback(state.EntityManager);

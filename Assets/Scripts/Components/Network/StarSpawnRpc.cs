@@ -11,5 +11,4 @@ public struct StarSpawnRpc : IRpcCommand
 {
     public int StarId;           // Star 고유 ID (서버에서 생성)
     public float3 Position;      // 스폰 위치
-    public float3 Velocity;      // 초기 속도
 }

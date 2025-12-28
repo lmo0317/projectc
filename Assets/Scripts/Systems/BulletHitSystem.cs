@@ -68,12 +68,7 @@ public partial struct BulletHitSystem : ISystem
                         // Star 아이템 스폰
                         if (hasStarSpawnConfig)
                         {
-                            UnityEngine.Debug.Log($"[BulletHit] Spawning Star at {enemyPos}");
                             SpawnStar(ref ecb, ref starSpawnConfig.ValueRW, enemyPos);
-                        }
-                        else
-                        {
-                            UnityEngine.Debug.Log("[BulletHit] No StarSpawnConfig!");
                         }
 
                         // RPC 생성: 모든 Client + Server에게 KillCount +1 브로드캐스트
@@ -101,44 +96,27 @@ public partial struct BulletHitSystem : ISystem
     /// </summary>
     private void SpawnStar(ref EntityCommandBuffer ecb, ref StarSpawnConfig config, float3 position)
     {
-        // 서버에서 직접 엔티티 생성 (Ghost 프리팹 대신)
+        // 서버에서 직접 엔티티 생성
         var starEntity = ecb.CreateEntity();
 
-        // 랜덤 방향으로 튀어오르는 속도 계산
-        float angle = config.RandomGenerator.NextFloat(0f, math.PI * 2f);
-        float force = config.RandomGenerator.NextFloat(config.SpawnForceMin, config.SpawnForceMax);
-        float horizontalForce = config.RandomGenerator.NextFloat(0f, config.SpreadRadius);
-
-        float3 velocity = new float3(
-            math.cos(angle) * horizontalForce,
-            force,  // 위로 튀어오름
-            math.sin(angle) * horizontalForce
-        );
-
-        // Star ID 생성 (간단하게 랜덤 사용)
+        // Star ID 생성
         int starId = config.RandomGenerator.NextInt(1, int.MaxValue);
+
+        // 바닥 위치에 스폰 (Y = 0)
+        float3 spawnPos = new float3(position.x, 0f, position.z);
 
         // 서버 엔티티에 필수 컴포넌트 추가
         ecb.AddComponent(starEntity, new StarTag());
         ecb.AddComponent(starEntity, new StarValue { Value = 1 });
         ecb.AddComponent(starEntity, new StarId { Value = starId });
-        ecb.AddComponent(starEntity, LocalTransform.FromPosition(position));
-        ecb.AddComponent(starEntity, new StarMovement
-        {
-            Velocity = velocity,
-            Gravity = 15f,
-            GroundY = 0f,
-            BounceDamping = 0.5f,
-            IsSettled = false
-        });
+        ecb.AddComponent(starEntity, LocalTransform.FromPosition(spawnPos));
 
         // 클라이언트에 Star 스폰 RPC 전송
         var rpcEntity = ecb.CreateEntity();
         ecb.AddComponent(rpcEntity, new StarSpawnRpc
         {
             StarId = starId,
-            Position = position,
-            Velocity = velocity
+            Position = spawnPos
         });
         ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
     }
