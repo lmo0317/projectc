@@ -76,7 +76,11 @@ public partial struct ClientStarVisualSystem : ISystem
                      .WithAll<ReceiveRpcCommandRequest>()
                      .WithEntityAccess())
         {
-            // TODO: 수집 이펙트 표시
+            // 수집 이펙트 재생
+            if (StarCollectEffectPool.Instance != null)
+            {
+                StarCollectEffectPool.Instance.PlayEffect(rpc.ValueRO.Position);
+            }
 
             // RPC 엔티티 삭제
             ecb.DestroyEntity(rpcEntity);

@@ -79,7 +79,7 @@ public class UIManager : MonoBehaviour
     {
         if (StarPointsText != null)
         {
-            StarPointsText.text = $"★ {current} / {threshold}";
+            StarPointsText.text = $"SP: {current} / {threshold}";
         }
     }
 

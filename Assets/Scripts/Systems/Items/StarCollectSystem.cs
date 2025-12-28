@@ -12,7 +12,7 @@ using Unity.Transforms;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 public partial struct StarCollectSystem : ISystem
 {
-    private const float CollectRadius = 0.8f;   // 수집 가능 거리
+    private const float CollectRadius = 1.0f;   // 수집 가능 거리
 
     public void OnCreate(ref SystemState state)
     {
