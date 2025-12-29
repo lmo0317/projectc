@@ -13,6 +13,7 @@ public class Phase4SetupTool : EditorWindow
     {
         CreateBuffEffectPool();
         CreateBuffIconsUI();
+        CreatePlayerStatsUI();
         CreateGameSoundManager();
         Debug.Log("[Phase4SetupTool] 모든 Phase 4 컴포넌트가 생성되었습니다!");
     }
@@ -99,6 +100,104 @@ public class Phase4SetupTool : EditorWindow
 
         Debug.Log("[Phase4SetupTool] GameSoundManager 생성 완료!");
         Selection.activeGameObject = obj;
+    }
+
+    [MenuItem("Tools/Phase 4 Setup/Create Player Stats UI")]
+    public static void CreatePlayerStatsUI()
+    {
+        // Canvas 찾기 또는 생성
+        var canvas = Object.FindObjectOfType<Canvas>();
+        if (canvas == null)
+        {
+            var canvasObj = new GameObject("Canvas");
+            canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasObj.AddComponent<CanvasScaler>();
+            canvasObj.AddComponent<GraphicRaycaster>();
+        }
+
+        // 기존 확인
+        var existing = Object.FindObjectOfType<PlayerStatsUI>();
+        if (existing != null)
+        {
+            Debug.LogWarning("[Phase4SetupTool] PlayerStatsUI가 이미 존재합니다!");
+            Selection.activeGameObject = existing.gameObject;
+            return;
+        }
+
+        // PlayerStatsUI 패널 생성 (오른쪽 하단)
+        var panelObj = new GameObject("PlayerStatsUI");
+        panelObj.transform.SetParent(canvas.transform, false);
+
+        var rect = panelObj.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1, 0);  // 우측 하단
+        rect.anchorMax = new Vector2(1, 0);
+        rect.pivot = new Vector2(1, 0);
+        rect.anchoredPosition = new Vector2(-10, 10);
+        rect.sizeDelta = new Vector2(180, 180);
+
+        // 배경 이미지
+        var bgImage = panelObj.AddComponent<Image>();
+        bgImage.color = new Color(0, 0, 0, 0.5f);
+
+        // VerticalLayoutGroup 추가
+        var layout = panelObj.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(10, 10, 5, 5);
+        layout.spacing = 2;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = false;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        var playerStatsUI = panelObj.AddComponent<PlayerStatsUI>();
+        playerStatsUI.StatsPanel = panelObj;
+
+        // 기본 스탯 설정 (플레이어 기본값)
+        playerStatsUI.BaseDamage = 10f;
+        playerStatsUI.BaseSpeed = 5f;
+        playerStatsUI.BaseFireRate = 0.5f;
+        playerStatsUI.BaseMissileCount = 1;
+        playerStatsUI.BaseMaxHealth = 100f;
+
+        // 스탯 텍스트들 생성 (모두 표시)
+        playerStatsUI.DamageText = CreateStatText(panelObj.transform, "DamageText", "DMG: 10", true);
+        playerStatsUI.SpeedText = CreateStatText(panelObj.transform, "SpeedText", "SPD: 5.0", true);
+        playerStatsUI.FireRateText = CreateStatText(panelObj.transform, "FireRateText", "ATK: 2.0/s", true);
+        playerStatsUI.MissileText = CreateStatText(panelObj.transform, "MissileText", "Missile: 1", true);
+        playerStatsUI.MaxHealthText = CreateStatText(panelObj.transform, "MaxHealthText", "HP: 100", true);
+        playerStatsUI.CriticalText = CreateStatText(panelObj.transform, "CriticalText", "CRIT: 0%", true);
+        playerStatsUI.MagnetText = CreateStatText(panelObj.transform, "MagnetText", "Magnet: 0m", true);
+        playerStatsUI.RegenText = CreateStatText(panelObj.transform, "RegenText", "Regen: 0/s", true);
+
+        Debug.Log("[Phase4SetupTool] PlayerStatsUI 생성 완료! (우측 하단)");
+        Selection.activeGameObject = panelObj;
+    }
+
+    /// <summary>
+    /// 스탯 텍스트 생성 헬퍼
+    /// </summary>
+    private static TextMeshProUGUI CreateStatText(Transform parent, string name, string defaultText, bool startActive = false)
+    {
+        var textObj = new GameObject(name);
+        textObj.transform.SetParent(parent, false);
+
+        var rect = textObj.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(160, 20);
+
+        var text = textObj.AddComponent<TextMeshProUGUI>();
+        text.text = defaultText;
+        text.fontSize = 16;
+        text.alignment = TextAlignmentOptions.Left;
+        text.color = Color.white;
+        text.richText = true; // Rich Text 활성화 (색상 태그 지원)
+
+        var layoutElement = textObj.AddComponent<LayoutElement>();
+        layoutElement.preferredHeight = 20;
+
+        textObj.SetActive(startActive);
+
+        return text;
     }
 
     [MenuItem("Tools/Phase 4 Setup/Create Star Collect Effect Pool")]
