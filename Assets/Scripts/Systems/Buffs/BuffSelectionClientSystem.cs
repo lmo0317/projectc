@@ -58,7 +58,28 @@ public partial struct BuffSelectionClientSystem : ISystem
 
             Debug.Log($"[BuffSelectionClientSystem] 버프 적용됨: {buffType} Lv.{newLevel}");
 
-            // TODO: 버프 획득 이펙트/사운드 재생
+            // 버프 획득 이펙트 재생
+            if (BuffEffectPool.Instance != null)
+            {
+                // 플레이어 위치에서 이펙트 재생
+                var playerPos = GetLocalPlayerPosition(ref state);
+                if (playerPos.HasValue)
+                {
+                    BuffEffectPool.Instance.PlayEffect(playerPos.Value, buffType);
+                }
+            }
+
+            // HUD 버프 아이콘 업데이트
+            if (BuffIconsUI.Instance != null)
+            {
+                BuffIconsUI.Instance.UpdateBuffIcon(buffType, newLevel);
+            }
+
+            // 사운드 효과 재생
+            if (GameSoundManager.Instance != null)
+            {
+                GameSoundManager.Instance.PlayBuffAcquired(buffType);
+            }
 
             // RPC 엔티티 삭제
             ecb.DestroyEntity(entity);
@@ -66,5 +87,28 @@ public partial struct BuffSelectionClientSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+
+    /// <summary>
+    /// 로컬 플레이어의 위치 가져오기
+    /// </summary>
+    private Unity.Mathematics.float3? GetLocalPlayerPosition(ref SystemState state)
+    {
+        foreach (var (transform, _) in
+                 SystemAPI.Query<RefRO<Unity.Transforms.LocalTransform>, RefRO<PlayerTag>>()
+                     .WithAll<GhostOwnerIsLocal>())
+        {
+            return transform.ValueRO.Position;
+        }
+
+        // GhostOwnerIsLocal이 없는 경우 (싱글플레이)
+        foreach (var (transform, _) in
+                 SystemAPI.Query<RefRO<Unity.Transforms.LocalTransform>, RefRO<PlayerTag>>()
+                     .WithDisabled<PlayerDead>())
+        {
+            return transform.ValueRO.Position;
+        }
+
+        return null;
     }
 }
