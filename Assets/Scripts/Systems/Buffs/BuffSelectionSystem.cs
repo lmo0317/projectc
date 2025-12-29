@@ -2,6 +2,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using UnityEngine;
+using Random = Unity.Mathematics.Random;
 
 /// <summary>
 /// 버프 선택 시스템 (Server에서만 실행)
@@ -37,6 +39,8 @@ public partial struct BuffSelectionSystem : ISystem
             // 포인트가 임계값에 도달했는지 체크
             if (starPoints.ValueRO.CurrentPoints >= starPoints.ValueRO.NextBuffThreshold)
             {
+                Debug.Log($"[BuffSelection] 버프 선택 트리거! 포인트: {starPoints.ValueRO.CurrentPoints} >= {starPoints.ValueRO.NextBuffThreshold}");
+
                 // 포인트 차감
                 starPoints.ValueRW.CurrentPoints -= starPoints.ValueRW.NextBuffThreshold;
 
@@ -47,6 +51,8 @@ public partial struct BuffSelectionSystem : ISystem
 
                 // 랜덤 3개 버프 선택 (최대 레벨 아닌 것들 중에서)
                 var options = SelectRandomBuffs(buffs.ValueRO, ref _random);
+
+                Debug.Log($"[BuffSelection] 선택된 버프: {(BuffType)options.x}, {(BuffType)options.y}, {(BuffType)options.z}");
 
                 // 버프 선택 상태 활성화
                 selectionState.ValueRW.IsSelecting = true;
@@ -66,6 +72,8 @@ public partial struct BuffSelectionSystem : ISystem
                     Option3CurrentLevel = buffs.ValueRO.GetLevel((BuffType)options.z)
                 });
                 ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+
+                Debug.Log("[BuffSelection] ShowBuffSelectionRpc 전송됨");
             }
         }
 
