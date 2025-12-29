@@ -24,8 +24,8 @@ public partial struct ProcessPlayerInputSystem : ISystem
     {
         var deltaTime = SystemAPI.Time.DeltaTime;
 
-        foreach (var (input, transform, speed) in
-                 SystemAPI.Query<RefRO<PlayerInput>, RefRW<LocalTransform>, RefRO<MovementSpeed>>()
+        foreach (var (input, transform, speed, modifiers) in
+                 SystemAPI.Query<RefRO<PlayerInput>, RefRW<LocalTransform>, RefRO<MovementSpeed>, RefRO<StatModifiers>>()
                      .WithAll<Simulate>()  // Netcode 예측 플래그
                      .WithDisabled<PlayerDead>())  // 죽은 플레이어는 움직이지 않음
         {
@@ -37,7 +37,10 @@ public partial struct ProcessPlayerInputSystem : ISystem
                     0,
                     input.ValueRO.Vertical
                 );
-                movement = math.normalizesafe(movement) * speed.ValueRO.Value * deltaTime;
+
+                // 버프 적용된 이동 속도 계산
+                float effectiveSpeed = speed.ValueRO.Value * modifiers.ValueRO.SpeedMultiplier;
+                movement = math.normalizesafe(movement) * effectiveSpeed * deltaTime;
                 transform.ValueRW.Position += movement;
                 transform.ValueRW.Position.y = 0.5f;  // 높이 고정
 

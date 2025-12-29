@@ -10,4 +10,5 @@ public struct HitEffectRpc : IRpcCommand
 {
     public float3 Position;  // 피격 위치
     public float Damage;     // 데미지 양
+    public bool IsCritical;  // 치명타 여부
 }

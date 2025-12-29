@@ -46,9 +46,10 @@ public class PlayerAuthoring : MonoBehaviour
 
             AddComponent(entity, new AutoShootConfig
             {
-                FireRate = authoring.FireRate,
+                BaseFireRate = authoring.FireRate,
                 TimeSinceLastShot = 0f,
                 ShootFromLeft = true, // 왼쪽부터 시작
+                BaseMissileCount = 1, // 기본 미사일 1개
                 BulletPrefab = bulletPrefabEntity
             });
 
@@ -108,6 +109,21 @@ public class PlayerAuthoring : MonoBehaviour
                 TotalCollected = 0,
                 NextBuffThreshold = 10, // 첫 버프는 10포인트
                 BuffSelectionCount = 0
+            });
+
+            // 버프 시스템 컴포넌트 추가
+            AddComponent<PlayerBuffs>(entity); // 모든 버프 레벨 0으로 시작
+
+            // 스탯 수정치 컴포넌트 추가 (기본값으로 시작)
+            AddComponent(entity, StatModifiers.Default);
+
+            // 버프 선택 상태 컴포넌트 추가
+            AddComponent(entity, new BuffSelectionState
+            {
+                IsSelecting = false,
+                Option1 = -1,
+                Option2 = -1,
+                Option3 = -1
             });
         }
     }

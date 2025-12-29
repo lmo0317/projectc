@@ -12,10 +12,13 @@ using Unity.Transforms;
 [UpdateAfter(typeof(EnemyChaseSystem))]
 public partial struct BulletHitSystem : ISystem
 {
+    private Random _random;
+
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<BulletTag>();
         state.RequireForUpdate<EnemyTag>();
+        _random = Random.CreateFromIndex((uint)System.DateTime.Now.Ticks);
     }
 
     public void OnUpdate(ref SystemState state)
@@ -26,6 +29,14 @@ public partial struct BulletHitSystem : ISystem
 
         // Star 스폰 설정 가져오기 (없으면 스폰 안 함)
         bool hasStarSpawnConfig = SystemAPI.TryGetSingletonRW<StarSpawnConfig>(out var starSpawnConfig);
+
+        // 플레이어의 StatModifiers 가져오기 (데미지/치명타 버프용)
+        StatModifiers playerModifiers = StatModifiers.Default;
+        foreach (var modifiers in SystemAPI.Query<RefRO<StatModifiers>>().WithAll<PlayerTag>())
+        {
+            playerModifiers = modifiers.ValueRO;
+            break;  // 첫 번째 플레이어 사용
+        }
 
         // 모든 총알에 대해
         foreach (var (bulletTransform, bulletEntity) in
@@ -47,16 +58,34 @@ public partial struct BulletHitSystem : ISystem
                 // 충돌 반경: 총알(0.2) + Enemy(0.5) = 0.7
                 if (distance < 0.7f)
                 {
+                    // 기본 데미지 가져오기
+                    float baseDamage = SystemAPI.GetComponent<DamageValue>(bulletEntity).Value;
+
+                    // 버프 적용된 데미지 계산
+                    float finalDamage = baseDamage * playerModifiers.DamageMultiplier;
+
+                    // 치명타 판정
+                    bool isCritical = false;
+                    if (playerModifiers.CriticalChance > 0f)
+                    {
+                        float roll = _random.NextFloat(0f, 100f);
+                        if (roll < playerModifiers.CriticalChance)
+                        {
+                            isCritical = true;
+                            finalDamage *= playerModifiers.CriticalMultiplier;
+                        }
+                    }
+
                     // 데미지 적용
-                    var damage = SystemAPI.GetComponent<DamageValue>(bulletEntity).Value;
-                    enemyHealth.ValueRW.Value -= damage;
+                    enemyHealth.ValueRW.Value -= (int)finalDamage;
 
                     // 피격 이펙트 RPC 전송 (모든 클라이언트에게)
                     var hitEffectRpcEntity = ecb.CreateEntity();
                     ecb.AddComponent(hitEffectRpcEntity, new HitEffectRpc
                     {
                         Position = enemyPos,
-                        Damage = damage
+                        Damage = (int)finalDamage,
+                        IsCritical = isCritical
                     });
                     ecb.AddComponent<SendRpcCommandRequest>(hitEffectRpcEntity);
 

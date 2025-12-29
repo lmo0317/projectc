@@ -8,6 +8,7 @@ using Unity.Transforms;
 /// 멀티플레이 모드에서는 ProcessPlayerInputSystem이 대신 동작
 /// </summary>
 [UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(StatCalculationSystem))]
 [BurstCompile]
 public partial struct PlayerMovementSystem : ISystem
 {
@@ -26,43 +27,38 @@ public partial struct PlayerMovementSystem : ISystem
 
         float deltaTime = SystemAPI.Time.DeltaTime;
 
-        // IJobEntity를 사용한 병렬 처리
-        new PlayerMovementJob
+        // StatModifiers를 사용하여 이동 속도 버프 적용
+        foreach (var (transform, input, speed, modifiers) in
+                 SystemAPI.Query<RefRW<LocalTransform>, RefRO<PlayerInput>, RefRO<MovementSpeed>, RefRO<StatModifiers>>()
+                     .WithAll<PlayerTag>()
+                     .WithDisabled<PlayerDead>())
         {
-            DeltaTime = deltaTime
-        }.ScheduleParallel();
-    }
-}
-
-[BurstCompile]
-public partial struct PlayerMovementJob : IJobEntity
-{
-    public float DeltaTime;
-
-    void Execute(ref LocalTransform transform, in PlayerInput input, in MovementSpeed speed)
-    {
-        // int Horizontal/Vertical을 float3로 변환
-        if (input.Horizontal != 0 || input.Vertical != 0)
-        {
-            // 입력값을 float3로 변환 (XZ 평면)
-            float3 moveDirection = new float3(
-                input.Horizontal,
-                0,
-                input.Vertical
-            );
-
-            // 정규화하여 대각선 이동 속도 보정
-            moveDirection = math.normalizesafe(moveDirection);
-
-            // Transform 위치 업데이트
-            float3 movement = moveDirection * speed.Value * DeltaTime;
-            transform.Position += movement;
-
-            // 이동 방향으로 즉시 회전
-            if (math.lengthsq(moveDirection) > 0.01f)
+            // int Horizontal/Vertical을 float3로 변환
+            if (input.ValueRO.Horizontal != 0 || input.ValueRO.Vertical != 0)
             {
-                quaternion targetRotation = quaternion.LookRotationSafe(moveDirection, math.up());
-                transform.Rotation = targetRotation;
+                // 입력값을 float3로 변환 (XZ 평면)
+                float3 moveDirection = new float3(
+                    input.ValueRO.Horizontal,
+                    0,
+                    input.ValueRO.Vertical
+                );
+
+                // 정규화하여 대각선 이동 속도 보정
+                moveDirection = math.normalizesafe(moveDirection);
+
+                // 버프 적용된 이동 속도 계산
+                float effectiveSpeed = speed.ValueRO.Value * modifiers.ValueRO.SpeedMultiplier;
+
+                // Transform 위치 업데이트
+                float3 movement = moveDirection * effectiveSpeed * deltaTime;
+                transform.ValueRW.Position += movement;
+
+                // 이동 방향으로 즉시 회전
+                if (math.lengthsq(moveDirection) > 0.01f)
+                {
+                    quaternion targetRotation = quaternion.LookRotationSafe(moveDirection, math.up());
+                    transform.ValueRW.Rotation = targetRotation;
+                }
             }
         }
     }
