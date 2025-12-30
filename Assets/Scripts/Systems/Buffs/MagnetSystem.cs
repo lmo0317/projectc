@@ -16,7 +16,9 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct MagnetSystem : ISystem
 {
-    private const float BaseMagnetSpeed = 10f;  // 기본 끌어당기는 속도
+    // 거리 기반 속도 설정
+    private const float MinSpeed = 5f;    // 가까울 때 최소 속도
+    private const float MaxSpeed = 30f;   // 멀 때 최대 속도
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -66,6 +68,7 @@ public partial struct MagnetSystem : ISystem
             bool inRange = false;
 
             // 가장 가까운 플레이어 찾기 (자석 범위 내)
+            float closestMagnetRange = 0f;
             for (int i = 0; i < playerPositions.Length; i++)
             {
                 float3 playerPos = playerPositions[i];
@@ -76,6 +79,7 @@ public partial struct MagnetSystem : ISystem
                 {
                     closestDistance = distance;
                     closestPlayerPos = playerPos;
+                    closestMagnetRange = magnetRange;
                     inRange = true;
                 }
             }
@@ -84,7 +88,12 @@ public partial struct MagnetSystem : ISystem
             if (inRange)
             {
                 float3 direction = math.normalizesafe(closestPlayerPos - starPos);
-                float moveDistance = BaseMagnetSpeed * deltaTime;
+
+                // 거리에 따른 속도 계산: 멀수록 빠르게, 가까울수록 느리게
+                float distanceRatio = closestDistance / closestMagnetRange;  // 0 ~ 1 (가까움 ~ 멂)
+                float speed = math.lerp(MinSpeed, MaxSpeed, distanceRatio);
+
+                float moveDistance = speed * deltaTime;
 
                 // 플레이어보다 더 멀리 가지 않도록 제한
                 if (moveDistance > closestDistance)
