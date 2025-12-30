@@ -30,12 +30,14 @@ public partial struct BulletHitSystem : ISystem
         // Star 스폰 설정 가져오기 (없으면 스폰 안 함)
         bool hasStarSpawnConfig = SystemAPI.TryGetSingletonRW<StarSpawnConfig>(out var starSpawnConfig);
 
-        // 플레이어의 StatModifiers 가져오기 (데미지/치명타 버프용)
+        // 플레이어의 StatModifiers 가져오기
         StatModifiers playerModifiers = StatModifiers.Default;
-        foreach (var modifiers in SystemAPI.Query<RefRO<StatModifiers>>().WithAll<PlayerTag>())
+        foreach (var modifiers in SystemAPI.Query<RefRO<StatModifiers>>()
+                     .WithAll<PlayerTag>()
+                     .WithDisabled<PlayerDead>())
         {
             playerModifiers = modifiers.ValueRO;
-            break;  // 첫 번째 플레이어 사용
+            break;  // 첫 번째 살아있는 플레이어 사용
         }
 
         // 모든 총알에 대해
@@ -58,11 +60,11 @@ public partial struct BulletHitSystem : ISystem
                 // 충돌 반경: 총알(0.2) + Enemy(0.5) = 0.7
                 if (distance < 0.7f)
                 {
-                    // 기본 데미지 가져오기
-                    float baseDamage = SystemAPI.GetComponent<DamageValue>(bulletEntity).Value;
+                    // 총알 데미지 가져오기
+                    float bulletDamage = SystemAPI.GetComponent<DamageValue>(bulletEntity).Value;
 
-                    // 버프 적용된 데미지 계산
-                    float finalDamage = baseDamage * playerModifiers.DamageMultiplier;
+                    // 최종 데미지 계산: 총알 데미지 * 데미지 배율
+                    float finalDamage = bulletDamage * playerModifiers.DamageMultiplier;
 
                     // 치명타 판정
                     bool isCritical = false;

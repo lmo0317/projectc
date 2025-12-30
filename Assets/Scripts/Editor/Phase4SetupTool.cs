@@ -154,16 +154,15 @@ public class Phase4SetupTool : EditorWindow
         playerStatsUI.StatsPanel = panelObj;
 
         // 기본 스탯 설정 (플레이어 기본값)
-        playerStatsUI.BaseDamage = 10f;
         playerStatsUI.BaseSpeed = 5f;
-        playerStatsUI.BaseFireRate = 0.5f;
+        playerStatsUI.BaseFireRate = 0.25f;  // 초당 4발
         playerStatsUI.BaseMissileCount = 1;
         playerStatsUI.BaseMaxHealth = 100f;
 
         // 스탯 텍스트들 생성 (모두 표시)
-        playerStatsUI.DamageText = CreateStatText(panelObj.transform, "DamageText", "DMG: 10", true);
+        playerStatsUI.DamageText = CreateStatText(panelObj.transform, "DamageText", "DMG: +0%", true);
         playerStatsUI.SpeedText = CreateStatText(panelObj.transform, "SpeedText", "SPD: 5.0", true);
-        playerStatsUI.FireRateText = CreateStatText(panelObj.transform, "FireRateText", "ATK: 2.0/s", true);
+        playerStatsUI.FireRateText = CreateStatText(panelObj.transform, "FireRateText", "ATK: 4.0/s", true);
         playerStatsUI.MissileText = CreateStatText(panelObj.transform, "MissileText", "Missile: 1", true);
         playerStatsUI.MaxHealthText = CreateStatText(panelObj.transform, "MaxHealthText", "HP: 100", true);
         playerStatsUI.CriticalText = CreateStatText(panelObj.transform, "CriticalText", "CRIT: 0%", true);

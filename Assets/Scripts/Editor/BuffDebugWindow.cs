@@ -11,8 +11,8 @@ public class BuffDebugWindow : EditorWindow
 {
     private Vector2 _scrollPosition;
     private bool _autoRefresh = true;
-    private float _lastRefreshTime;
-    private const float RefreshInterval = 0.1f;
+    private double _lastRefreshTime;
+    private const float RefreshInterval = 0.5f;
 
     // 캐시된 데이터
     private PlayerBuffs _cachedBuffs;
@@ -50,26 +50,12 @@ public class BuffDebugWindow : EditorWindow
         window.minSize = new Vector2(400, 500);
     }
 
-    private void OnEnable()
+    private void OnInspectorUpdate()
     {
-        EditorApplication.update += OnEditorUpdate;
-    }
-
-    private void OnDisable()
-    {
-        EditorApplication.update -= OnEditorUpdate;
-    }
-
-    private void OnEditorUpdate()
-    {
+        // 자동 새로고침
         if (_autoRefresh && Application.isPlaying)
         {
-            if (Time.realtimeSinceStartup - _lastRefreshTime > RefreshInterval)
-            {
-                _lastRefreshTime = Time.realtimeSinceStartup;
-                RefreshData();
-                Repaint();
-            }
+            Repaint();
         }
     }
 
@@ -97,6 +83,15 @@ public class BuffDebugWindow : EditorWindow
         {
             if (GUILayout.Button("수동 새로고침"))
             {
+                RefreshData();
+            }
+        }
+        else
+        {
+            // 자동 새로고침
+            if (EditorApplication.timeSinceStartup - _lastRefreshTime > RefreshInterval)
+            {
+                _lastRefreshTime = EditorApplication.timeSinceStartup;
                 RefreshData();
             }
         }

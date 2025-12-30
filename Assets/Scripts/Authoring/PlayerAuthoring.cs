@@ -7,7 +7,7 @@ using UnityEngine;
 public class PlayerAuthoring : MonoBehaviour
 {
     public float MoveSpeed = 5f;
-    public float FireRate = 0.5f;  // 초당 2발
+    public float FireRate = 0.25f;  // 초당 4발
     public GameObject BulletPrefab; // Inspector에서 할당
     public Transform LeftFirePoint;  // 왼쪽 총알 발사 위치 (Inspector에서 할당)
     public Transform RightFirePoint; // 오른쪽 총알 발사 위치 (Inspector에서 할당)

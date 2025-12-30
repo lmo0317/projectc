@@ -40,10 +40,9 @@ public partial struct PlayerStatsUISystem : ISystem
 
     private void UpdateUI(in StatModifiers stats, in AutoShootConfig shootConfig, in MovementSpeed moveSpeed, in PlayerHealth health)
     {
-        // 기본 스탯 설정 (Inspector에서 설정한 값 또는 컴포넌트 값 사용)
         var ui = PlayerStatsUI.Instance;
 
-        // 기본 스탯이 설정되지 않았으면 컴포넌트에서 가져옴
+        // 기본 스탯을 컴포넌트에서 가져옴
         if (ui.BaseSpeed <= 0f)
             ui.BaseSpeed = moveSpeed.Value;
         if (ui.BaseFireRate <= 0f)

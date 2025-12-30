@@ -23,9 +23,8 @@ public class PlayerStatsUI : MonoBehaviour
     public TextMeshProUGUI MaxHealthText;
 
     [Header("Base Stats (기본 수치)")]
-    public float BaseDamage = 10f;          // 기본 데미지
     public float BaseSpeed = 5f;            // 기본 이동 속도
-    public float BaseFireRate = 0.5f;       // 기본 발사 간격 (초)
+    public float BaseFireRate = 0.25f;      // 기본 발사 간격 (초) - 초당 4발
     public int BaseMissileCount = 1;        // 기본 미사일 개수
     public float BaseMaxHealth = 100f;      // 기본 최대 체력
 
@@ -56,9 +55,8 @@ public class PlayerStatsUI : MonoBehaviour
     /// <summary>
     /// 기본 스탯 설정 (게임 시작 시 호출)
     /// </summary>
-    public void SetBaseStats(float damage, float speed, float fireRate, int missileCount, float maxHealth)
+    public void SetBaseStats(float speed, float fireRate, int missileCount, float maxHealth)
     {
-        BaseDamage = damage;
         BaseSpeed = speed;
         BaseFireRate = fireRate;
         BaseMissileCount = missileCount;
@@ -91,20 +89,19 @@ public class PlayerStatsUI : MonoBehaviour
     /// </summary>
     private void RefreshUI()
     {
-        // 데미지: 기본값 x 배율
+        // 데미지 증가율 표시
         if (DamageText != null)
         {
-            float finalDamage = BaseDamage * _damageMultiplier;
             bool isBuffed = _damageMultiplier > 1f;
+            int bonusPercent = Mathf.RoundToInt((_damageMultiplier - 1f) * 100f);
 
             if (isBuffed)
             {
-                int bonusPercent = Mathf.RoundToInt((_damageMultiplier - 1f) * 100f);
-                DamageText.text = $"DMG: {finalDamage:F0} <color=#4CFF4C>(+{bonusPercent}%)</color>";
+                DamageText.text = $"DMG: <color=#4CFF4C>+{bonusPercent}%</color>";
             }
             else
             {
-                DamageText.text = $"DMG: {finalDamage:F0}";
+                DamageText.text = "DMG: +0%";
             }
         }
 

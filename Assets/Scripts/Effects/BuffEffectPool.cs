@@ -65,6 +65,10 @@ public class BuffEffectPool : MonoBehaviour
         effectObj.transform.SetParent(transform);
 
         var ps = effectObj.AddComponent<ParticleSystem>();
+
+        // 설정 변경 전 파티클 시스템 정지
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
         var main = ps.main;
         main.duration = 0.5f;
         main.startLifetime = 0.8f;
