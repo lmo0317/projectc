@@ -18,11 +18,14 @@ public partial struct StatCalculationSystem : ISystem
         state.RequireForUpdate<PlayerBuffs>();
     }
 
+    // 기본 최대 체력
+    private const float BaseMaxHealth = 100f;
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        foreach (var (buffs, modifiers) in
-                 SystemAPI.Query<RefRO<PlayerBuffs>, RefRW<StatModifiers>>()
+        foreach (var (buffs, modifiers, health) in
+                 SystemAPI.Query<RefRO<PlayerBuffs>, RefRW<StatModifiers>, RefRW<PlayerHealth>>()
                      .WithAll<PlayerTag>())
         {
             var levels = buffs.ValueRO;
@@ -40,7 +43,11 @@ public partial struct StatCalculationSystem : ISystem
             modifiers.ValueRW.SpeedMultiplier = 1f + GetSpeedBonus(levels.SpeedLevel);
 
             // 최대 체력 보너스
-            modifiers.ValueRW.BonusMaxHealth = GetMaxHealthBonus(levels.MaxHealthLevel);
+            float bonusMaxHealth = GetMaxHealthBonus(levels.MaxHealthLevel);
+            modifiers.ValueRW.BonusMaxHealth = bonusMaxHealth;
+
+            // PlayerHealth의 MaxHealth 업데이트 (기본 체력 + 보너스)
+            health.ValueRW.MaxHealth = BaseMaxHealth + bonusMaxHealth;
 
             // 체력 재생
             modifiers.ValueRW.HealthRegenPerSecond = GetHealthRegen(levels.HealthRegenLevel);
