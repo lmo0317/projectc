@@ -49,12 +49,14 @@ public class BuffOptionCard : MonoBehaviour
             {
                 IconImage.sprite = icon;
                 IconImage.color = Color.white;
+                IconImage.preserveAspect = true;  // 비율 유지
             }
             else
             {
                 // 아이콘이 없으면 색상으로 대체
                 IconImage.sprite = null;
                 IconImage.color = buffData.Color;
+                IconImage.preserveAspect = false;
             }
         }
 
