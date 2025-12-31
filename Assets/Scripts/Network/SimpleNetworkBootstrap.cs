@@ -2,10 +2,12 @@ using Unity.Entities;
 using Unity.NetCode;
 using Unity.Networking.Transport;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Multiplayer Play Mode 호환 네트워크 부트스트랩
 /// ClientServerBootstrap 상속을 통해 자동 연결 지원
+/// LobbyScene에서는 자동 연결 비활성화
 /// </summary>
 [UnityEngine.Scripting.Preserve]
 public class SimpleNetworkBootstrap : ClientServerBootstrap
@@ -15,11 +17,20 @@ public class SimpleNetworkBootstrap : ClientServerBootstrap
         // 백그라운드에서도 실행되도록 설정 (멀티플레이 필수)
         Application.runInBackground = true;
 
-        // AutoConnectPort 설정으로 자동 연결 활성화
-        // 서버는 AutoConnectPort에서 리스닝, 클라이언트는 loopback:AutoConnectPort로 연결
-        AutoConnectPort = 7979;
+        // 현재 씬 확인
+        var activeScene = SceneManager.GetActiveScene().name;
 
-        // 기본 클라이언트/서버 World 생성 (Multiplayer Play Mode 설정에 따라 결정됨)
+        // 로비 씬에서 시작하면 자동 연결 비활성화
+        if (activeScene == "LobbyScene")
+        {
+            AutoConnectPort = 0;
+            CreateLocalWorld(defaultWorldName);
+            Debug.Log("[SimpleNetworkBootstrap] Lobby mode - no auto connect");
+            return true;
+        }
+
+        // 게임 씬에서 직접 시작 (테스트용): 기존 자동 연결
+        AutoConnectPort = 7979;
         CreateDefaultClientServerWorlds();
 
         // 생성된 World에 Tick Rate 설정 추가
