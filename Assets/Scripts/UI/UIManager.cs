@@ -17,8 +17,8 @@ public class UIManager : MonoBehaviour
     public GameObject GameOverPanel;
     public TextMeshProUGUI FinalStatsText;
 
-    [Header("Restart")]
-    public Button RestartButton;
+    [Header("Exit")]
+    public Button ExitButton;
 
     private void Awake()
     {
@@ -28,23 +28,26 @@ public class UIManager : MonoBehaviour
             GameOverPanel.SetActive(false);
         }
 
-        // 재시작 버튼 이벤트 연결
-        if (RestartButton != null)
+        // 나가기 버튼 이벤트 연결
+        if (ExitButton != null)
         {
-            RestartButton.onClick.AddListener(OnRestartButtonClicked);
+            ExitButton.onClick.AddListener(OnExitButtonClicked);
         }
     }
 
-    private void OnRestartButtonClicked()
+    private void OnExitButtonClicked()
     {
-        var restartManager = GetComponent<GameRestartManager>();
-        if (restartManager != null)
+        Debug.Log("[UIManager] Exit button clicked - returning to lobby");
+
+        if (NetworkConnectionManager.Instance != null)
         {
-            restartManager.RestartGame();
+            NetworkConnectionManager.Instance.ReturnToLobby();
         }
         else
         {
-            Debug.LogWarning("GameRestartManager not found on GameUI!");
+            Debug.LogWarning("[UIManager] NetworkConnectionManager not found!");
+            // fallback: 직접 씬 로드
+            UnityEngine.SceneManagement.SceneManager.LoadScene("LobbyScene");
         }
     }
 

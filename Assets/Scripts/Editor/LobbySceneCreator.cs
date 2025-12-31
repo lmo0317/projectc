@@ -10,9 +10,19 @@ using TMPro;
 /// </summary>
 public class LobbySceneCreator : EditorWindow
 {
+    // 폰트 경로
+    private const string FontAssetPath = "Assets/TextMesh Pro/Fonts/Maplestory Bold SDF.asset";
+
     [MenuItem("Tools/Create Lobby Scene")]
     public static void CreateLobbyScene()
     {
+        // 폰트 로드
+        var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
+        if (fontAsset == null)
+        {
+            Debug.LogWarning($"폰트를 찾을 수 없습니다: {FontAssetPath}. 기본 폰트를 사용합니다.");
+        }
+
         // 새 씬 생성
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -34,7 +44,7 @@ public class LobbySceneCreator : EditorWindow
         bgImage.color = new Color(0.1f, 0.05f, 0.15f, 1f);  // 어두운 보라색 배경
 
         // 타이틀 텍스트
-        var titleObj = CreateText(canvasObj.transform, "TitleText", "Project C");
+        var titleObj = CreateText(canvasObj.transform, "TitleText", "Project C", fontAsset);
         var titleRect = titleObj.GetComponent<RectTransform>();
         titleRect.anchorMin = new Vector2(0.5f, 0.75f);
         titleRect.anchorMax = new Vector2(0.5f, 0.75f);
@@ -48,7 +58,7 @@ public class LobbySceneCreator : EditorWindow
         titleTmp.color = new Color(0.8f, 0.3f, 1f);  // 보라색
 
         // 호스트로 시작 버튼 (개발/테스트용 - 서버+클라이언트 동시 실행)
-        var hostButtonObj = CreateButton(canvasObj.transform, "StartHostButton", "호스트로 시작");
+        var hostButtonObj = CreateButton(canvasObj.transform, "StartHostButton", "호스트로 시작", fontAsset);
         var hostButtonRect = hostButtonObj.GetComponent<RectTransform>();
         hostButtonRect.anchorMin = new Vector2(0.5f, 0.60f);
         hostButtonRect.anchorMax = new Vector2(0.5f, 0.60f);
@@ -66,7 +76,7 @@ public class LobbySceneCreator : EditorWindow
         }
 
         // 서버 시작 버튼 (Dedicated 서버만)
-        var serverButtonObj = CreateButton(canvasObj.transform, "StartServerButton", "서버만 시작");
+        var serverButtonObj = CreateButton(canvasObj.transform, "StartServerButton", "서버만 시작", fontAsset);
         var serverButtonRect = serverButtonObj.GetComponent<RectTransform>();
         serverButtonRect.anchorMin = new Vector2(0.5f, 0.48f);
         serverButtonRect.anchorMax = new Vector2(0.5f, 0.48f);
@@ -84,7 +94,7 @@ public class LobbySceneCreator : EditorWindow
         }
 
         // 서버 주소 입력 필드
-        var addressInputObj = CreateInputField(canvasObj.transform, "AddressInput", "127.0.0.1");
+        var addressInputObj = CreateInputField(canvasObj.transform, "AddressInput", "127.0.0.1", fontAsset);
         var addressInputRect = addressInputObj.GetComponent<RectTransform>();
         addressInputRect.anchorMin = new Vector2(0.5f, 0.33f);
         addressInputRect.anchorMax = new Vector2(0.5f, 0.33f);
@@ -92,7 +102,7 @@ public class LobbySceneCreator : EditorWindow
         addressInputRect.sizeDelta = new Vector2(300, 50);
 
         // 서버 접속 버튼
-        var connectButtonObj = CreateButton(canvasObj.transform, "ConnectButton", "서버 접속");
+        var connectButtonObj = CreateButton(canvasObj.transform, "ConnectButton", "서버 접속", fontAsset);
         var connectButtonRect = connectButtonObj.GetComponent<RectTransform>();
         connectButtonRect.anchorMin = new Vector2(0.5f, 0.21f);
         connectButtonRect.anchorMax = new Vector2(0.5f, 0.21f);
@@ -110,7 +120,7 @@ public class LobbySceneCreator : EditorWindow
         }
 
         // 상태 텍스트
-        var statusObj = CreateText(canvasObj.transform, "StatusText", "호스트로 시작하거나 서버에 접속하세요");
+        var statusObj = CreateText(canvasObj.transform, "StatusText", "호스트로 시작하거나 서버에 접속하세요", fontAsset);
         var statusRect = statusObj.GetComponent<RectTransform>();
         statusRect.anchorMin = new Vector2(0.5f, 0.10f);
         statusRect.anchorMax = new Vector2(0.5f, 0.10f);
@@ -178,7 +188,7 @@ public class LobbySceneCreator : EditorWindow
         return obj;
     }
 
-    private static GameObject CreateText(Transform parent, string name, string text)
+    private static GameObject CreateText(Transform parent, string name, string text, TMP_FontAsset fontAsset = null)
     {
         var obj = new GameObject(name);
         obj.transform.SetParent(parent, false);
@@ -189,10 +199,16 @@ public class LobbySceneCreator : EditorWindow
         tmp.text = text;
         tmp.alignment = TextAlignmentOptions.Center;
 
+        // 폰트 설정
+        if (fontAsset != null)
+        {
+            tmp.font = fontAsset;
+        }
+
         return obj;
     }
 
-    private static GameObject CreateButton(Transform parent, string name, string buttonText)
+    private static GameObject CreateButton(Transform parent, string name, string buttonText, TMP_FontAsset fontAsset = null)
     {
         var obj = new GameObject(name);
         obj.transform.SetParent(parent, false);
@@ -211,7 +227,7 @@ public class LobbySceneCreator : EditorWindow
         button.colors = colors;
 
         // 버튼 텍스트
-        var textObj = CreateText(obj.transform, "Text", buttonText);
+        var textObj = CreateText(obj.transform, "Text", buttonText, fontAsset);
         var textRect = textObj.GetComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
@@ -221,7 +237,7 @@ public class LobbySceneCreator : EditorWindow
         return obj;
     }
 
-    private static GameObject CreateInputField(Transform parent, string name, string placeholder)
+    private static GameObject CreateInputField(Transform parent, string name, string placeholder, TMP_FontAsset fontAsset = null)
     {
         var obj = new GameObject(name);
         obj.transform.SetParent(parent, false);
@@ -243,7 +259,7 @@ public class LobbySceneCreator : EditorWindow
         textAreaRect.offsetMax = new Vector2(-10, -5);
 
         // Placeholder
-        var placeholderObj = CreateText(textAreaObj.transform, "Placeholder", placeholder);
+        var placeholderObj = CreateText(textAreaObj.transform, "Placeholder", placeholder, fontAsset);
         var placeholderRect = placeholderObj.GetComponent<RectTransform>();
         placeholderRect.anchorMin = Vector2.zero;
         placeholderRect.anchorMax = Vector2.one;
@@ -255,7 +271,7 @@ public class LobbySceneCreator : EditorWindow
         placeholderTmp.alignment = TextAlignmentOptions.MidlineLeft;
 
         // Text
-        var textObj = CreateText(textAreaObj.transform, "Text", "");
+        var textObj = CreateText(textAreaObj.transform, "Text", "", fontAsset);
         var textRect = textObj.GetComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;

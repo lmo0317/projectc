@@ -246,6 +246,16 @@ public class BuffDebugWindow : EditorWindow
             AddStarPoints(100);
         }
         EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space(10);
+
+        // 플레이어 죽이기 버튼
+        GUI.backgroundColor = new Color(0.5f, 0f, 0f);
+        if (GUILayout.Button("플레이어 죽이기 (테스트)", GUILayout.Height(35)))
+        {
+            KillPlayer();
+        }
+        GUI.backgroundColor = Color.white;
     }
 
     private void RefreshData()
@@ -400,6 +410,31 @@ public class BuffDebugWindow : EditorWindow
             starPoints.TotalCollected += amount;
             entityManager.SetComponentData(entity, starPoints);
             Debug.Log($"[BuffDebug] +{amount} 포인트 추가 (현재: {starPoints.CurrentPoints})");
+        }
+        entities.Dispose();
+        RefreshData();
+    }
+
+    private void KillPlayer()
+    {
+        var serverWorld = GetServerWorld();
+        if (serverWorld == null)
+            return;
+
+        var entityManager = serverWorld.EntityManager;
+        var query = entityManager.CreateEntityQuery(
+            ComponentType.ReadWrite<PlayerHealth>(),
+            ComponentType.ReadOnly<PlayerTag>()
+        );
+
+        var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+        if (entities.Length > 0)
+        {
+            var entity = entities[0];
+            var health = entityManager.GetComponentData<PlayerHealth>(entity);
+            health.CurrentHealth = 0;  // 체력을 0으로 설정
+            entityManager.SetComponentData(entity, health);
+            Debug.Log("[BuffDebug] 플레이어 체력을 0으로 설정 (죽음 트리거)");
         }
         entities.Dispose();
         RefreshData();
