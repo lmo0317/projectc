@@ -1,9 +1,8 @@
-using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
+using UnityEngine;
 
 /// <summary>
 /// 클라이언트에서 Star 비주얼을 자석 효과로 끌어당기는 시스템
@@ -12,18 +11,31 @@ using Unity.Transforms;
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(ClientStarVisualSystem))]
-public partial struct ClientMagnetVisualSystem : ISystem
+public partial class ClientMagnetVisualSystem : SystemBase
 {
     // 거리 기반 속도 설정
     private const float MinSpeed = 5f;    // 가까울 때 최소 속도
     private const float MaxSpeed = 30f;   // 멀 때 최대 속도
 
-    public void OnCreate(ref SystemState state)
+    private MagnetRangeIndicator rangeIndicator;
+
+    protected override void OnCreate()
     {
-        state.RequireForUpdate<ClientStarVisual>();
+        RequireForUpdate<ClientStarVisual>();
     }
 
-    public void OnUpdate(ref SystemState state)
+    protected override void OnStartRunning()
+    {
+        // MagnetRangeIndicator 찾기 또는 생성
+        rangeIndicator = Object.FindObjectOfType<MagnetRangeIndicator>();
+        if (rangeIndicator == null)
+        {
+            var indicatorObj = new GameObject("MagnetRangeIndicator");
+            rangeIndicator = indicatorObj.AddComponent<MagnetRangeIndicator>();
+        }
+    }
+
+    protected override void OnUpdate()
     {
         float deltaTime = SystemAPI.Time.DeltaTime;
 
@@ -56,6 +68,19 @@ public partial struct ClientMagnetVisualSystem : ISystem
                 magnetRange = modifiers.ValueRO.MagnetRange;
                 hasPlayer = true;
                 break;
+            }
+        }
+
+        // 자석 범위 인디케이터 업데이트
+        if (rangeIndicator != null)
+        {
+            if (hasPlayer && magnetRange > 0f)
+            {
+                rangeIndicator.UpdateRange(magnetRange, new Vector3(playerPos.x, playerPos.y, playerPos.z));
+            }
+            else
+            {
+                rangeIndicator.UpdateRange(0f, Vector3.zero);
             }
         }
 
