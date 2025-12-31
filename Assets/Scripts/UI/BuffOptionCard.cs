@@ -41,10 +41,21 @@ public class BuffOptionCard : MonoBehaviour
 
         var buffData = BuffDataHelper.GetBuffData((BuffType)buffType);
 
-        // 아이콘 (현재는 색상으로 대체)
+        // 아이콘 설정
         if (IconImage != null)
         {
-            IconImage.color = buffData.Color;
+            var icon = buffData.GetIcon();
+            if (icon != null)
+            {
+                IconImage.sprite = icon;
+                IconImage.color = Color.white;
+            }
+            else
+            {
+                // 아이콘이 없으면 색상으로 대체
+                IconImage.sprite = null;
+                IconImage.color = buffData.Color;
+            }
         }
 
         // 버프 이름
@@ -91,6 +102,7 @@ public static class BuffDataHelper
     {
         public string Name;
         public Color Color;
+        public string IconPath;  // Resources 폴더 내 아이콘 경로
         public string[] LevelEffects;
 
         public string GetEffectDescription(int level)
@@ -98,6 +110,13 @@ public static class BuffDataHelper
             if (level <= 0 || level > LevelEffects.Length)
                 return "";
             return LevelEffects[level - 1];
+        }
+
+        public Sprite GetIcon()
+        {
+            if (string.IsNullOrEmpty(IconPath))
+                return null;
+            return Resources.Load<Sprite>(IconPath);
         }
     }
 
@@ -108,6 +127,7 @@ public static class BuffDataHelper
         {
             Name = "데미지 증가",
             Color = new Color(1f, 0.3f, 0.3f), // 빨강
+            IconPath = "Icons/Buffs/Damage",
             LevelEffects = new[] { "+10%", "+20%", "+35%", "+50%", "+75%" }
         },
         // Speed
@@ -115,6 +135,7 @@ public static class BuffDataHelper
         {
             Name = "이동 속도",
             Color = new Color(0.3f, 0.8f, 1f), // 하늘색
+            IconPath = "Icons/Buffs/Speed",
             LevelEffects = new[] { "+10%", "+20%", "+30%", "+40%", "+50%" }
         },
         // FireRate
@@ -122,6 +143,7 @@ public static class BuffDataHelper
         {
             Name = "공격 속도",
             Color = new Color(1f, 0.8f, 0.3f), // 주황
+            IconPath = "Icons/Buffs/FireRate",
             LevelEffects = new[] { "+15%", "+30%", "+45%", "+60%", "+80%" }
         },
         // MissileCount
@@ -129,6 +151,7 @@ public static class BuffDataHelper
         {
             Name = "미사일 추가",
             Color = new Color(0.8f, 0.3f, 1f), // 보라
+            IconPath = "Icons/Buffs/Missile",
             LevelEffects = new[] { "+1", "+2", "+3", "+4", "+6" }
         },
         // Magnet
@@ -136,6 +159,7 @@ public static class BuffDataHelper
         {
             Name = "자석 범위",
             Color = new Color(0.3f, 1f, 0.5f), // 초록
+            IconPath = "Icons/Buffs/Magnet",
             LevelEffects = new[] { "3m", "5m", "7m", "10m", "15m" }
         },
         // HealthRegen
@@ -143,6 +167,7 @@ public static class BuffDataHelper
         {
             Name = "체력 재생",
             Color = new Color(1f, 0.5f, 0.5f), // 분홍
+            IconPath = "Icons/Buffs/HealthRegen",
             LevelEffects = new[] { "1/s", "2/s", "3/s", "5/s", "8/s" }
         },
         // MaxHealth
@@ -150,6 +175,7 @@ public static class BuffDataHelper
         {
             Name = "최대 체력",
             Color = new Color(1f, 0.3f, 0.6f), // 핫핑크
+            IconPath = "Icons/Buffs/MaxHealth",
             LevelEffects = new[] { "+20", "+40", "+70", "+100", "+150" }
         },
         // Critical
@@ -157,6 +183,7 @@ public static class BuffDataHelper
         {
             Name = "치명타",
             Color = new Color(1f, 1f, 0.3f), // 노랑
+            IconPath = "Icons/Buffs/Critical",
             LevelEffects = new[] { "5% (2x)", "10% (2x)", "15% (2.5x)", "20% (2.5x)", "30% (3x)" }
         }
     };
@@ -168,6 +195,6 @@ public static class BuffDataHelper
         {
             return BuffDatas[index];
         }
-        return new BuffData { Name = "Unknown", Color = Color.gray, LevelEffects = new string[0] };
+        return new BuffData { Name = "Unknown", Color = Color.gray, IconPath = null, LevelEffects = new string[0] };
     }
 }
