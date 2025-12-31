@@ -13,8 +13,8 @@ public class BuffIconsUI : MonoBehaviour
     [Header("Settings")]
     public Transform IconsContainer;        // 아이콘 부모 오브젝트
     public GameObject BuffIconPrefab;       // 버프 아이콘 프리팹
-    public float IconSize = 40f;            // 아이콘 크기
-    public float IconSpacing = 5f;          // 아이콘 간격
+    public float IconSize = 80f;            // 아이콘 크기 (기본 60)
+    public float IconSpacing = 10f;          // 아이콘 간격
 
     [Header("Colors (버프 타입별)")]
     public Color DamageColor = new Color(1f, 0.3f, 0.3f);
@@ -26,8 +26,8 @@ public class BuffIconsUI : MonoBehaviour
     public Color MaxHealthColor = new Color(1f, 0.3f, 0.6f);
     public Color CriticalColor = new Color(1f, 1f, 0.3f);
 
-    // 생성된 아이콘 오브젝트 캐시
-    private Dictionary<BuffType, BuffIconItem> iconItems = new Dictionary<BuffType, BuffIconItem>();
+    // 생성된 아이콘 오브젝트 캐시 (삽입 순서 유지를 위해 List 사용)
+    private List<BuffIconItem> iconItems = new List<BuffIconItem>();
 
     private void Awake()
     {
@@ -78,6 +78,7 @@ public class BuffIconsUI : MonoBehaviour
         iconRect.offsetMax = new Vector2(-4, -4);
         var iconImage = iconChild.AddComponent<Image>();
         iconImage.color = Color.white;
+        iconImage.preserveAspect = true;  // 비율 유지
 
         // 레벨 텍스트 (자식)
         var levelChild = new GameObject("Level");
@@ -89,7 +90,7 @@ public class BuffIconsUI : MonoBehaviour
         levelRect.offsetMax = Vector2.zero;
         var levelText = levelChild.AddComponent<TextMeshProUGUI>();
         levelText.text = "1";
-        levelText.fontSize = 14;
+        levelText.fontSize = 22;  // 크기에 맞게 폰트 증가
         levelText.fontStyle = FontStyles.Bold;
         levelText.alignment = TextAlignmentOptions.BottomRight;
         levelText.color = Color.white;
@@ -115,18 +116,26 @@ public class BuffIconsUI : MonoBehaviour
             return;
         }
 
-        if (!iconItems.TryGetValue(buffType, out var iconItem))
+        // 기존 아이콘 찾기
+        var iconItem = iconItems.Find(item => item.BuffType == buffType);
+
+        if (iconItem == null)
         {
-            // 새 아이콘 생성
+            // 새 아이콘 생성 및 리스트 끝에 추가 (순서 유지)
             iconItem = CreateBuffIcon(buffType);
-            iconItems[buffType] = iconItem;
+            iconItems.Add(iconItem);
+
+            // 새 아이콘만 올바른 위치에 배치 (기존 아이콘은 그대로)
+            var rect = iconItem.GameObject.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                int index = iconItems.Count - 1;
+                rect.anchoredPosition = new Vector2(-index * (IconSize + IconSpacing), 0);
+            }
         }
 
         // 레벨 업데이트
         iconItem.SetLevel(level);
-
-        // 아이콘 재정렬
-        ArrangeIcons();
 
         Debug.Log($"[BuffIconsUI] 버프 아이콘 업데이트: {buffType} Lv.{level}");
     }
@@ -136,14 +145,25 @@ public class BuffIconsUI : MonoBehaviour
     /// </summary>
     public void RemoveBuffIcon(BuffType buffType)
     {
-        if (iconItems.TryGetValue(buffType, out var iconItem))
+        int removeIndex = iconItems.FindIndex(item => item.BuffType == buffType);
+        if (removeIndex >= 0)
         {
+            var iconItem = iconItems[removeIndex];
             if (iconItem.GameObject != null)
             {
                 Destroy(iconItem.GameObject);
             }
-            iconItems.Remove(buffType);
-            ArrangeIcons();
+            iconItems.RemoveAt(removeIndex);
+
+            // 제거된 위치 이후의 아이콘들만 위치 조정
+            for (int i = removeIndex; i < iconItems.Count; i++)
+            {
+                var rect = iconItems[i].GameObject.GetComponent<RectTransform>();
+                if (rect != null)
+                {
+                    rect.anchoredPosition = new Vector2(-i * (IconSize + IconSpacing), 0);
+                }
+            }
         }
     }
 
@@ -152,11 +172,11 @@ public class BuffIconsUI : MonoBehaviour
     /// </summary>
     public void ClearAllIcons()
     {
-        foreach (var kvp in iconItems)
+        foreach (var item in iconItems)
         {
-            if (kvp.Value.GameObject != null)
+            if (item.GameObject != null)
             {
-                Destroy(kvp.Value.GameObject);
+                Destroy(item.GameObject);
             }
         }
         iconItems.Clear();
@@ -171,44 +191,43 @@ public class BuffIconsUI : MonoBehaviour
         iconObj.name = $"BuffIcon_{buffType}";
         iconObj.SetActive(true);
 
+        // 아이콘 크기 설정
+        var rect = iconObj.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.sizeDelta = new Vector2(IconSize, IconSize);
+        }
+
         var iconItem = new BuffIconItem
         {
             GameObject = iconObj,
             BuffType = buffType
         };
 
-        // 아이콘 이미지 색상 설정
+        // 아이콘 이미지 설정 (Sprite 또는 색상)
         var iconImage = iconObj.transform.Find("Icon")?.GetComponent<Image>();
         if (iconImage != null)
         {
-            iconImage.color = GetBuffColor(buffType);
+            var buffData = BuffDataHelper.GetBuffData(buffType);
+            var sprite = buffData.GetIcon();
+            if (sprite != null)
+            {
+                iconImage.sprite = sprite;
+                iconImage.color = Color.white;
+                iconImage.preserveAspect = true;
+            }
+            else
+            {
+                // 아이콘이 없으면 색상으로 대체
+                iconImage.sprite = null;
+                iconImage.color = GetBuffColor(buffType);
+            }
         }
 
         // 레벨 텍스트 찾기
         iconItem.LevelText = iconObj.transform.Find("Level")?.GetComponent<TextMeshProUGUI>();
 
         return iconItem;
-    }
-
-    /// <summary>
-    /// 아이콘 재정렬 (오른쪽 상단 기준, 왼쪽으로 확장)
-    /// </summary>
-    private void ArrangeIcons()
-    {
-        int index = 0;
-        foreach (var kvp in iconItems)
-        {
-            if (kvp.Value.GameObject != null)
-            {
-                var rect = kvp.Value.GameObject.GetComponent<RectTransform>();
-                if (rect != null)
-                {
-                    // 오른쪽에서 왼쪽으로 배치 (음수 방향)
-                    rect.anchoredPosition = new Vector2(-index * (IconSize + IconSpacing), 0);
-                }
-                index++;
-            }
-        }
     }
 
     /// <summary>
