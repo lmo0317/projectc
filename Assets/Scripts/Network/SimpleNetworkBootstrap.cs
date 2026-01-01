@@ -17,6 +17,9 @@ public class SimpleNetworkBootstrap : ClientServerBootstrap
         // 백그라운드에서도 실행되도록 설정 (멀티플레이 필수)
         Application.runInBackground = true;
 
+        // 프레임레이트 제한 (빌드에서 무제한 fps로 인한 파티클/이펙트 문제 방지)
+        Application.targetFrameRate = 60;
+
         // 현재 씬 확인
         var activeScene = SceneManager.GetActiveScene().name;
 

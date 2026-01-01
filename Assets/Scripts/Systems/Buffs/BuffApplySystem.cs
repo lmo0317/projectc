@@ -119,6 +119,7 @@ public partial struct BuffApplySystem : ISystem
                         var notifyRpcEntity = ecb.CreateEntity();
                         ecb.AddComponent(notifyRpcEntity, new BuffAppliedRpc
                         {
+                            PlayerNetworkId = ghostOwner.ValueRO.NetworkId,  // 버프를 받은 플레이어 ID
                             BuffType = (int)selectedBuffType,
                             NewLevel = newLevel
                         });

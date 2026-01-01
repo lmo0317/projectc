@@ -108,32 +108,45 @@ public partial struct BuffSelectionClientSystem : ISystem
                      .WithAll<ReceiveRpcCommandRequest>()
                      .WithEntityAccess())
         {
+            var playerNetworkId = rpc.ValueRO.PlayerNetworkId;
             var buffType = (BuffType)rpc.ValueRO.BuffType;
             var newLevel = rpc.ValueRO.NewLevel;
 
-            Debug.Log($"[BuffSelectionClientSystem] 버프 적용됨: {buffType} Lv.{newLevel}");
+            Debug.Log($"[BuffSelectionClientSystem] 버프 적용 RPC 수신: Player={playerNetworkId}, {buffType} Lv.{newLevel}, LocalPlayer={localNetworkId}");
 
-            // 버프 획득 이펙트 재생
-            if (BuffEffectPool.Instance != null)
+            // 자신의 플레이어인지 확인 (로컬 플레이어의 버프만 UI에 표시)
+            bool isLocalPlayer = (localNetworkId > 0 && playerNetworkId == localNetworkId);
+
+            if (isLocalPlayer)
             {
-                // 플레이어 위치에서 이펙트 재생
-                var playerPos = GetLocalPlayerPosition(ref state);
-                if (playerPos.HasValue)
+                Debug.Log($"[BuffSelectionClientSystem] 내 버프 적용: {buffType} Lv.{newLevel}");
+
+                // 버프 획득 이펙트 재생
+                if (BuffEffectPool.Instance != null)
                 {
-                    BuffEffectPool.Instance.PlayEffect(playerPos.Value, buffType);
+                    // 플레이어 위치에서 이펙트 재생
+                    var playerPos = GetLocalPlayerPosition(ref state);
+                    if (playerPos.HasValue)
+                    {
+                        BuffEffectPool.Instance.PlayEffect(playerPos.Value, buffType);
+                    }
+                }
+
+                // HUD 버프 아이콘 업데이트
+                if (BuffIconsUI.Instance != null)
+                {
+                    BuffIconsUI.Instance.UpdateBuffIcon(buffType, newLevel);
+                }
+
+                // 사운드 효과 재생
+                if (GameSoundManager.Instance != null)
+                {
+                    GameSoundManager.Instance.PlayBuffAcquired(buffType);
                 }
             }
-
-            // HUD 버프 아이콘 업데이트
-            if (BuffIconsUI.Instance != null)
+            else
             {
-                BuffIconsUI.Instance.UpdateBuffIcon(buffType, newLevel);
-            }
-
-            // 사운드 효과 재생
-            if (GameSoundManager.Instance != null)
-            {
-                GameSoundManager.Instance.PlayBuffAcquired(buffType);
+                Debug.Log($"[BuffSelectionClientSystem] 다른 플레이어({playerNetworkId})의 버프 - UI 업데이트 안 함");
             }
 
             // RPC 엔티티 삭제
