@@ -9,6 +9,7 @@ using Unity.NetCode;
 /// 버프 선택 UI 관리자
 /// 서버에서 ShowBuffSelectionRpc를 받으면 UI를 표시하고
 /// 플레이어가 선택하면 BuffSelectedRpc를 서버로 전송
+/// 다른 플레이어가 선택 중이면 대기 UI 표시
 /// </summary>
 public class BuffSelectionUI : MonoBehaviour
 {
@@ -19,12 +20,17 @@ public class BuffSelectionUI : MonoBehaviour
     public TextMeshProUGUI TitleText;
     public BuffOptionCard[] OptionCards; // 3개의 카드
 
+    [Header("Waiting UI References")]
+    public GameObject WaitingPanel;
+    public TextMeshProUGUI WaitingText;
+
     [Header("Settings")]
     public bool PauseGameOnShow = true;
 
     // 현재 표시된 버프 옵션들
     private int[] _currentOptions = new int[3];
     private bool _isShowing;
+    private bool _isWaiting; // 다른 플레이어 대기 중
 
     private void Awake()
     {
@@ -45,6 +51,11 @@ public class BuffSelectionUI : MonoBehaviour
         if (Panel != null)
         {
             Panel.SetActive(false);
+        }
+
+        if (WaitingPanel != null)
+        {
+            WaitingPanel.SetActive(false);
         }
     }
 
@@ -101,11 +112,8 @@ public class BuffSelectionUI : MonoBehaviour
             OptionCards[2]?.Setup(option3Type, option3Level, OnBuffSelected);
         }
 
-        // 게임 일시정지
-        if (PauseGameOnShow)
-        {
-            Time.timeScale = 0f;
-        }
+        // 서버가 게임을 일시정지하므로 클라이언트에서는 Time.timeScale을 조정하지 않음
+        // 네트워크 시뮬레이션이 멈추면 Ghost가 자동으로 멈춤
 
         // 커서 표시
         Cursor.visible = true;
@@ -130,11 +138,7 @@ public class BuffSelectionUI : MonoBehaviour
             Panel.SetActive(false);
         }
 
-        // 게임 재개
-        if (PauseGameOnShow)
-        {
-            Time.timeScale = 1f;
-        }
+        // 서버가 게임 재개를 처리하므로 클라이언트에서는 Time.timeScale을 조정하지 않음
 
         Debug.Log("[BuffSelectionUI] 버프 선택 UI 숨김");
     }
@@ -198,4 +202,62 @@ public class BuffSelectionUI : MonoBehaviour
     /// 현재 UI가 표시 중인지 확인
     /// </summary>
     public bool IsShowing => _isShowing;
+
+    /// <summary>
+    /// 다른 플레이어가 버프 선택 중일 때 대기 UI 표시
+    /// </summary>
+    public void ShowWaiting()
+    {
+        if (_isWaiting || _isShowing)
+            return;
+
+        _isWaiting = true;
+
+        // 대기 패널 활성화
+        if (WaitingPanel != null)
+        {
+            WaitingPanel.SetActive(true);
+        }
+
+        // 대기 텍스트 설정
+        if (WaitingText != null)
+        {
+            WaitingText.text = "다른 플레이어가 버프를 선택 중입니다...";
+        }
+
+        Debug.Log("[BuffSelectionUI] 대기 UI 표시");
+    }
+
+    /// <summary>
+    /// 대기 UI 숨기기
+    /// </summary>
+    public void HideWaiting()
+    {
+        if (!_isWaiting)
+            return;
+
+        _isWaiting = false;
+
+        // 대기 패널 비활성화
+        if (WaitingPanel != null)
+        {
+            WaitingPanel.SetActive(false);
+        }
+
+        Debug.Log("[BuffSelectionUI] 대기 UI 숨김");
+    }
+
+    /// <summary>
+    /// 모든 UI 숨기기 (게임 재개 시 호출)
+    /// </summary>
+    public void HideAll()
+    {
+        Hide();
+        HideWaiting();
+    }
+
+    /// <summary>
+    /// 대기 중인지 확인
+    /// </summary>
+    public bool IsWaiting => _isWaiting;
 }

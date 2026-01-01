@@ -3,6 +3,10 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+/// <summary>
+/// 총알 이동 시스템
+/// 서버에서 버프 선택 중이면 총알 이동 일시정지
+/// </summary>
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(AutoShootSystem))]
 [BurstCompile]
@@ -17,6 +21,13 @@ public partial struct BulletMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 서버에서 버프 선택 중이면 총알 이동 중지
+        foreach (var sessionState in SystemAPI.Query<RefRO<GameSessionState>>())
+        {
+            if (sessionState.ValueRO.IsGamePaused)
+                return;
+        }
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         new BulletMovementJob

@@ -8,6 +8,7 @@ using Random = Unity.Mathematics.Random;
 /// <summary>
 /// 버프 선택 시스템 (Server에서만 실행)
 /// 포인트가 임계값에 도달하면 랜덤 3개 버프 선택 UI 요청
+/// 버프 선택 중 게임 일시정지 처리
 /// </summary>
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
@@ -26,8 +27,28 @@ public partial struct BuffSelectionSystem : ISystem
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        foreach (var (starPoints, buffs, selectionState, entity) in
-                 SystemAPI.Query<RefRW<PlayerStarPoints>, RefRO<PlayerBuffs>, RefRW<BuffSelectionState>>()
+        // GameSessionState 가져오기
+        Entity sessionEntity = Entity.Null;
+        GameSessionState sessionState = default;
+        foreach (var (session, entity) in SystemAPI.Query<RefRO<GameSessionState>>().WithEntityAccess())
+        {
+            sessionEntity = entity;
+            sessionState = session.ValueRO;
+            break;
+        }
+
+        // InGame 상태인 연결 목록 수집 (RPC 브로드캐스트용)
+        var inGameConnections = new NativeList<Entity>(Allocator.Temp);
+        foreach (var (networkId, connectionEntity) in
+                 SystemAPI.Query<RefRO<NetworkId>>()
+                     .WithAll<NetworkStreamInGame>()
+                     .WithEntityAccess())
+        {
+            inGameConnections.Add(connectionEntity);
+        }
+
+        foreach (var (starPoints, buffs, selectionState, ghostOwner, entity) in
+                 SystemAPI.Query<RefRW<PlayerStarPoints>, RefRO<PlayerBuffs>, RefRW<BuffSelectionState>, RefRO<GhostOwner>>()
                      .WithAll<PlayerTag>()
                      .WithDisabled<PlayerDead>()
                      .WithEntityAccess())
@@ -60,23 +81,67 @@ public partial struct BuffSelectionSystem : ISystem
                 selectionState.ValueRW.Option2 = (int)options.y;
                 selectionState.ValueRW.Option3 = (int)options.z;
 
-                // 클라이언트에 버프 선택 UI 표시 RPC 전송
-                var rpcEntity = ecb.CreateEntity();
-                ecb.AddComponent(rpcEntity, new ShowBuffSelectionRpc
+                // GameSessionState 업데이트 (버프 선택 중인 플레이어 수 증가)
+                if (sessionEntity != Entity.Null)
                 {
-                    Option1BuffType = (int)options.x,
-                    Option1CurrentLevel = buffs.ValueRO.GetLevel((BuffType)options.x),
-                    Option2BuffType = (int)options.y,
-                    Option2CurrentLevel = buffs.ValueRO.GetLevel((BuffType)options.y),
-                    Option3BuffType = (int)options.z,
-                    Option3CurrentLevel = buffs.ValueRO.GetLevel((BuffType)options.z)
-                });
-                ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+                    sessionState.BuffSelectingPlayerCount++;
+                    state.EntityManager.SetComponentData(sessionEntity, sessionState);
+                    Debug.Log($"[BuffSelection] 게임 일시정지! 버프 선택 중 플레이어: {sessionState.BuffSelectingPlayerCount}");
+                }
+
+                // 모든 클라이언트에 게임 일시정지 RPC 전송
+                int selectingPlayerId = ghostOwner.ValueRO.NetworkId;
+                foreach (var connectionEntity in inGameConnections)
+                {
+                    var pauseRpcEntity = ecb.CreateEntity();
+                    ecb.AddComponent(pauseRpcEntity, new GamePauseRpc
+                    {
+                        IsPaused = true,
+                        SelectingPlayerNetworkId = selectingPlayerId
+                    });
+                    ecb.AddComponent(pauseRpcEntity, new SendRpcCommandRequest
+                    {
+                        TargetConnection = connectionEntity
+                    });
+                }
+
+                // 버프 선택 중인 플레이어에게 UI 표시 RPC 전송
+                Entity targetConnection = Entity.Null;
+                foreach (var (networkId, connEntity) in
+                         SystemAPI.Query<RefRO<NetworkId>>()
+                             .WithAll<NetworkStreamInGame>()
+                             .WithEntityAccess())
+                {
+                    if (networkId.ValueRO.Value == selectingPlayerId)
+                    {
+                        targetConnection = connEntity;
+                        break;
+                    }
+                }
+
+                if (targetConnection != Entity.Null)
+                {
+                    var rpcEntity = ecb.CreateEntity();
+                    ecb.AddComponent(rpcEntity, new ShowBuffSelectionRpc
+                    {
+                        Option1BuffType = (int)options.x,
+                        Option1CurrentLevel = buffs.ValueRO.GetLevel((BuffType)options.x),
+                        Option2BuffType = (int)options.y,
+                        Option2CurrentLevel = buffs.ValueRO.GetLevel((BuffType)options.y),
+                        Option3BuffType = (int)options.z,
+                        Option3CurrentLevel = buffs.ValueRO.GetLevel((BuffType)options.z)
+                    });
+                    ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
+                    {
+                        TargetConnection = targetConnection
+                    });
+                }
 
                 Debug.Log("[BuffSelection] ShowBuffSelectionRpc 전송됨");
             }
         }
 
+        inGameConnections.Dispose();
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }

@@ -24,6 +24,13 @@ public partial struct BulletHitSystem : ISystem
 
     public void OnUpdate(ref SystemState state)
     {
+        // 버프 선택 중이면 충돌 처리 중지
+        foreach (var sessionState in SystemAPI.Query<RefRO<GameSessionState>>())
+        {
+            if (sessionState.ValueRO.IsGamePaused)
+                return;
+        }
+
         // Ghost 프리팹 인스턴스화를 위해 BeginSimulationEntityCommandBufferSystem 사용
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);

@@ -31,4 +31,14 @@ public struct GameSessionState : IComponentData
     /// 게임 오버 시점 (현재 미사용)
     /// </summary>
     public double GameOverTime;
+
+    /// <summary>
+    /// 버프 선택 중인 플레이어 수 (0이면 게임 진행, 1 이상이면 일시정지)
+    /// </summary>
+    public int BuffSelectingPlayerCount;
+
+    /// <summary>
+    /// 게임이 일시정지 중인지 (버프 선택 중)
+    /// </summary>
+    public bool IsGamePaused => BuffSelectingPlayerCount > 0;
 }

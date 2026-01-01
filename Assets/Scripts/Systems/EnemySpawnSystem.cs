@@ -25,6 +25,13 @@ public partial struct EnemySpawnSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 버프 선택 중이면 Enemy 스폰 중지
+        foreach (var sessionState in SystemAPI.Query<RefRO<GameSessionState>>())
+        {
+            if (sessionState.ValueRO.IsGamePaused)
+                return;
+        }
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();

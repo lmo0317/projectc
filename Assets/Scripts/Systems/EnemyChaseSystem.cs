@@ -28,6 +28,13 @@ public partial struct EnemyChaseSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 버프 선택 중이면 Enemy 이동 중지
+        foreach (var sessionState in SystemAPI.Query<RefRO<GameSessionState>>())
+        {
+            if (sessionState.ValueRO.IsGamePaused)
+                return;
+        }
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         // 1단계: 살아있는 플레이어 위치 수집 (PlayerDead가 비활성화된 플레이어만)

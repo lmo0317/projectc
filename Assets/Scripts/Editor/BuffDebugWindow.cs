@@ -480,11 +480,38 @@ public class BuffDebugWindow : EditorWindow
 
     private void AddStarPoints(int amount)
     {
-        var serverWorld = GetServerWorld();
-        if (serverWorld == null)
-            return;
+        // 서버 월드가 있으면 직접 처리, 없으면 RPC 전송
+        World serverWorld = null;
+        World clientWorld = null;
 
-        var entityManager = serverWorld.EntityManager;
+        foreach (var world in World.All)
+        {
+            if (!world.IsCreated) continue;
+            if (world.IsServer()) serverWorld = world;
+            if (world.IsClient()) clientWorld = world;
+        }
+
+        if (serverWorld != null)
+        {
+            // 서버가 있으면 직접 처리
+            AddStarPointsInWorld(serverWorld, amount);
+        }
+        else if (clientWorld != null)
+        {
+            // 클라이언트만 있으면 RPC 전송
+            SendAddPointsRpc(clientWorld, amount);
+        }
+        else
+        {
+            Debug.LogWarning("[BuffDebug] 네트워크 월드를 찾을 수 없습니다.");
+        }
+
+        RefreshData();
+    }
+
+    private static void AddStarPointsInWorld(World world, int amount)
+    {
+        var entityManager = world.EntityManager;
         var query = entityManager.CreateEntityQuery(
             ComponentType.ReadWrite<PlayerStarPoints>(),
             ComponentType.ReadOnly<PlayerTag>()
@@ -498,10 +525,25 @@ public class BuffDebugWindow : EditorWindow
             starPoints.CurrentPoints += amount;
             starPoints.TotalCollected += amount;
             entityManager.SetComponentData(entity, starPoints);
-            Debug.Log($"[BuffDebug] +{amount} 포인트 추가 (현재: {starPoints.CurrentPoints})");
+            Debug.Log($"[BuffDebug] +{amount} 포인트 추가 (현재: {starPoints.CurrentPoints}) (World: {world.Name})");
+        }
+        else
+        {
+            Debug.LogWarning("[BuffDebug] 플레이어를 찾을 수 없습니다.");
         }
         entities.Dispose();
-        RefreshData();
+    }
+
+    private static void SendAddPointsRpc(World clientWorld, int amount)
+    {
+        var entityManager = clientWorld.EntityManager;
+
+        // RPC Entity 생성
+        var rpcEntity = entityManager.CreateEntity();
+        entityManager.AddComponentData(rpcEntity, new DebugAddPointsRpc { Amount = amount });
+        entityManager.AddComponent<SendRpcCommandRequest>(rpcEntity);
+
+        Debug.Log($"[BuffDebug] 서버로 Add Points RPC 전송됨 (+{amount})");
     }
 
     private void KillPlayer()

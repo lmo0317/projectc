@@ -26,6 +26,13 @@ public partial struct AutoShootSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 버프 선택 중이면 발사 중지
+        foreach (var sessionState in SystemAPI.Query<RefRO<GameSessionState>>())
+        {
+            if (sessionState.ValueRO.IsGamePaused)
+                return;
+        }
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         // ECB 사용 (즉시 실행되는 ECB)

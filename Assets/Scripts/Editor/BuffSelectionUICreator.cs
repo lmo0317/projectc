@@ -91,6 +91,11 @@ public class BuffSelectionUICreator : EditorWindow
         buffSelectionUI.Panel = panelObj;
         buffSelectionUI.PauseGameOnShow = true;
 
+        // 대기 UI 패널 생성
+        var waitingPanel = CreateWaitingPanel(canvas.transform);
+        buffSelectionUI.WaitingPanel = waitingPanel.panel;
+        buffSelectionUI.WaitingText = waitingPanel.text;
+
         // 초기 상태: 숨김
         panelObj.SetActive(false);
 
@@ -99,6 +104,41 @@ public class BuffSelectionUICreator : EditorWindow
 
         Debug.Log("BuffSelectionUI 생성 완료! Panel을 Canvas 하위에 배치했습니다.");
         Debug.Log("UIManager의 BuffSelectionUI 참조를 설정하거나, BuffSelectionUI.Instance를 사용하세요.");
+    }
+
+    private static (GameObject panel, TextMeshProUGUI text) CreateWaitingPanel(Transform parent)
+    {
+        // 대기 패널 생성
+        var panelObj = CreatePanel(parent, "BuffWaitingPanel");
+        var bgImage = panelObj.GetComponent<Image>();
+        bgImage.color = new Color(0, 0, 0, 0.7f);
+
+        // 컨텐츠 박스
+        var contentObj = CreatePanel(panelObj.transform, "Content");
+        var contentImage = contentObj.GetComponent<Image>();
+        contentImage.color = new Color(0.15f, 0.15f, 0.2f, 0.95f);
+        var contentRect = contentObj.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0.25f, 0.4f);
+        contentRect.anchorMax = new Vector2(0.75f, 0.6f);
+        contentRect.offsetMin = Vector2.zero;
+        contentRect.offsetMax = Vector2.zero;
+
+        // 대기 텍스트
+        var textObj = CreateText(contentObj.transform, "WaitingText", "다른 플레이어가 버프를 선택 중입니다...");
+        var textRect = textObj.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = new Vector2(20, 20);
+        textRect.offsetMax = new Vector2(-20, -20);
+        var textTmp = textObj.GetComponent<TextMeshProUGUI>();
+        textTmp.fontSize = 36;
+        textTmp.alignment = TextAlignmentOptions.Center;
+        textTmp.color = Color.white;
+
+        // 초기 상태: 숨김
+        panelObj.SetActive(false);
+
+        return (panelObj, textTmp);
     }
 
     private static GameObject CreatePanel(Transform parent, string name)
