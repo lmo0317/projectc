@@ -44,10 +44,32 @@ public partial struct PlayerSpawnSystem : ISystem
         var connectionEntities = m_NewPlayersQuery.ToEntityArray(Allocator.Temp);
         var networkIds = m_NewPlayersQuery.ToComponentDataArray<NetworkId>(Allocator.Temp);
 
+        // 새 플레이어 스폰 전에 연결이 끊긴 죽은 플레이어들 정리
+        var deadPlayersToRemove = new NativeList<Entity>(Allocator.Temp);
+        foreach (var (connectionOwner, playerEntity) in
+                 SystemAPI.Query<RefRO<ConnectionOwner>>()
+                     .WithAll<PlayerTag, PlayerDead>()
+                     .WithEntityAccess())
+        {
+            // 연결 Entity가 더 이상 존재하지 않으면 삭제 대상
+            if (!state.EntityManager.Exists(connectionOwner.ValueRO.Entity))
+            {
+                deadPlayersToRemove.Add(playerEntity);
+            }
+        }
+
+        foreach (var deadPlayer in deadPlayersToRemove)
+        {
+            UnityEngine.Debug.Log($"[PlayerSpawnSystem] Removing orphaned dead player");
+            state.EntityManager.DestroyEntity(deadPlayer);
+        }
+        deadPlayersToRemove.Dispose();
+
         for (var i = 0; i < connectionEntities.Length; i++)
         {
             var networkId = networkIds[i];
             var connectionEntity = connectionEntities[i];
+
             var player = state.EntityManager.Instantiate(prefab);
 
             UnityEngine.Debug.Log($"[SpawnPlayerSystem][{state.WorldUnmanaged.Name}] Spawning player for NetworkId {networkId.Value}");
