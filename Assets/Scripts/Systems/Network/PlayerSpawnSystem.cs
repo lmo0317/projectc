@@ -63,12 +63,12 @@ public partial struct PlayerSpawnSystem : ISystem
             // CommandTarget 설정 (입력 라우팅)
             state.EntityManager.SetComponentData(connectionEntity, new CommandTarget { targetEntity = player });
 
-            // LinkedEntityGroup에 추가 (연결 끊김 시 자동 삭제)
-            state.EntityManager.GetBuffer<LinkedEntityGroup>(connectionEntity)
-                .Add(new LinkedEntityGroup { Value = player });
-
-            // ConnectionOwner 추가 (역참조)
+            // ConnectionOwner 추가 (역참조 - 연결 끊김 시 플레이어 정리용)
             state.EntityManager.AddComponentData(player, new ConnectionOwner { Entity = connectionEntity });
+
+            // 참고: LinkedEntityGroup에 추가하지 않음!
+            // 연결이 끊겨도 플레이어 Entity는 자동 삭제되지 않음
+            // PlayerDisconnectCleanupSystem에서 명시적으로 처리
 
             // PlayerSpawned 마커 추가 (중복 스폰 방지)
             state.EntityManager.AddComponent<PlayerSpawned>(connectionEntity);

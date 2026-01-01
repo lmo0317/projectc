@@ -4,13 +4,17 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 로비 화면 UI
-/// Dedicated 서버 시작 또는 클라이언트로 서버 접속
+///
+/// === 버튼 구성 ===
+/// 1. 서버 시작 - Dedicated Server 시작 (서버 전용 빌드용)
+/// 2. 서버 접속 - 클라이언트로 서버에 접속
+///
+/// 호스트 모드는 제거됨 (서버/클라이언트 분리 정책)
 /// </summary>
 public class LobbyUI : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Button startServerButton;
-    [SerializeField] private Button startHostButton;
     [SerializeField] private Button connectButton;
     [SerializeField] private TMP_InputField addressInput;
     [SerializeField] private TextMeshProUGUI titleText;
@@ -21,11 +25,6 @@ public class LobbyUI : MonoBehaviour
         if (startServerButton != null)
         {
             startServerButton.onClick.AddListener(OnStartServerClicked);
-        }
-
-        if (startHostButton != null)
-        {
-            startHostButton.onClick.AddListener(OnStartHostClicked);
         }
 
         if (connectButton != null)
@@ -57,21 +56,6 @@ public class LobbyUI : MonoBehaviour
         NetworkConnectionManager.Instance.StartDedicatedServer();
     }
 
-    private void OnStartHostClicked()
-    {
-        if (NetworkConnectionManager.Instance == null)
-        {
-            Debug.LogError("[LobbyUI] NetworkConnectionManager not found!");
-            UpdateStatus("오류: NetworkConnectionManager가 없습니다");
-            return;
-        }
-
-        UpdateStatus("호스트로 시작 중...");
-        SetButtonsInteractable(false);
-
-        NetworkConnectionManager.Instance.StartAsHost();
-    }
-
     private void OnConnectClicked()
     {
         if (NetworkConnectionManager.Instance == null)
@@ -97,8 +81,6 @@ public class LobbyUI : MonoBehaviour
     {
         if (startServerButton != null)
             startServerButton.interactable = interactable;
-        if (startHostButton != null)
-            startHostButton.interactable = interactable;
         if (connectButton != null)
             connectButton.interactable = interactable;
         if (addressInput != null)

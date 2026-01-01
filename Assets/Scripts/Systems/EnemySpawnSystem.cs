@@ -7,7 +7,8 @@ using Unity.Transforms;
 
 /// <summary>
 /// Enemy 스폰 시스템 (Server에서만 실행)
-/// 살아있는 플레이어가 없으면 스폰 중지 + 기존 Enemy 모두 제거
+/// 살아있는 플레이어가 없으면 스폰만 중지 (Enemy는 유지)
+/// 게임 리셋 시 Enemy 제거는 GameSessionSystem에서 처리
 /// </summary>
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
@@ -39,17 +40,10 @@ public partial struct EnemySpawnSystem : ISystem
             alivePlayerPositions.Add(transform.ValueRO.Position);
         }
 
-        // 살아있는 플레이어가 없으면 → 모든 Enemy 제거 + 스폰 중지
+        // 살아있는 플레이어가 없으면 스폰만 중지 (Enemy는 유지)
+        // 다른 플레이어가 재연결할 수 있으므로 게임 상태는 유지
         if (alivePlayerPositions.Length == 0)
         {
-            // 모든 Enemy 제거
-            foreach (var (enemyTag, enemyEntity) in
-                     SystemAPI.Query<RefRO<EnemyTag>>()
-                         .WithEntityAccess())
-            {
-                ecb.DestroyEntity(enemyEntity);
-            }
-
             alivePlayerPositions.Dispose();
             return;
         }

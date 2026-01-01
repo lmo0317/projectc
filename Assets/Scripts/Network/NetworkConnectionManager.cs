@@ -7,7 +7,19 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 네트워크 연결 관리자
-/// Dedicated 서버 / 클라이언트 분리 모드 지원
+///
+/// === 정책 ===
+/// 1. 서버 (Dedicated Server)
+///    - 서버만 실행 (클라이언트 없음)
+///    - 한번 켜지면 계속 유지 (종료 없음)
+///    - 플레이어 1명 이상 접속 시 게임 시작
+///    - 모든 플레이어가 죽고 나가면 게임 초기화
+///    - 새 플레이어 접속 시 처음부터 다시 시작
+///
+/// 2. 클라이언트
+///    - 서버에 접속만 함
+///    - 죽으면 "나가기" 버튼으로 로비 복귀
+///    - 로비에서 다시 접속 가능
 /// </summary>
 public class NetworkConnectionManager : MonoBehaviour
 {
@@ -30,7 +42,7 @@ public class NetworkConnectionManager : MonoBehaviour
         set => port = value;
     }
 
-    // 현재 모드
+    // 현재 모드 (서버 또는 클라이언트만)
     private enum NetworkMode { None, Server, Client }
     private NetworkMode currentMode = NetworkMode.None;
 
@@ -55,7 +67,8 @@ public class NetworkConnectionManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Dedicated 서버로 시작 (서버만 실행, 화면 없음)
+    /// Dedicated 서버로 시작 (서버만 실행)
+    /// 서버는 한번 시작되면 계속 유지됨
     /// </summary>
     public void StartDedicatedServer()
     {
@@ -100,6 +113,7 @@ public class NetworkConnectionManager : MonoBehaviour
                 if (success)
                 {
                     Debug.Log($"[NetworkConnectionManager] Server listening on port {port}");
+                    Debug.Log("[NetworkConnectionManager] Server is ready - waiting for players");
                 }
                 else
                 {
@@ -176,86 +190,6 @@ public class NetworkConnectionManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 호스트로 게임 시작 (서버 + 클라이언트 동시 실행)
-    /// 테스트용 또는 싱글플레이용
-    /// </summary>
-    public void StartAsHost()
-    {
-        Debug.Log($"[NetworkConnectionManager] Starting as Host on port {port}");
-        currentMode = NetworkMode.Server;  // 서버 역할도 함
-
-        // 기존 Local World 제거
-        DestroyLocalWorld();
-
-        // Server World 생성
-        var serverWorld = ClientServerBootstrap.CreateServerWorld("ServerWorld");
-        SetTickRate(serverWorld);
-
-        // Client World 생성
-        var clientWorld = ClientServerBootstrap.CreateClientWorld("ClientWorld");
-        SetTickRate(clientWorld);
-
-        // DefaultGameObjectInjectionWorld 설정
-        World.DefaultGameObjectInjectionWorld = clientWorld;
-
-        // 게임 씬 로드
-        SceneManager.sceneLoaded += OnHostSceneLoaded;
-        SceneManager.LoadScene(gameSceneName);
-    }
-
-    private void OnHostSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        SceneManager.sceneLoaded -= OnHostSceneLoaded;
-
-        if (scene.name != gameSceneName)
-            return;
-
-        Debug.Log($"[NetworkConnectionManager] Host scene loaded: {scene.name}");
-
-        // 서버 Listen
-        var serverWorld = GetServerWorld();
-        if (serverWorld != null)
-        {
-            var serverEndpoint = NetworkEndpoint.AnyIpv4.WithPort(port);
-            using var serverQuery = serverWorld.EntityManager.CreateEntityQuery(
-                ComponentType.ReadWrite<NetworkStreamDriver>());
-
-            if (!serverQuery.IsEmpty)
-            {
-                bool success = serverQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(serverEndpoint);
-                if (success)
-                {
-                    Debug.Log($"[NetworkConnectionManager] Host server listening on port {port}");
-                }
-                else
-                {
-                    Debug.LogError($"[NetworkConnectionManager] Failed to listen on port {port}");
-                }
-            }
-        }
-
-        // 클라이언트 로컬 연결
-        var clientWorld = GetClientWorld();
-        if (clientWorld != null)
-        {
-            var clientEndpoint = NetworkEndpoint.LoopbackIpv4.WithPort(port);
-            using var clientQuery = clientWorld.EntityManager.CreateEntityQuery(
-                ComponentType.ReadWrite<NetworkStreamDriver>());
-
-            if (!clientQuery.IsEmpty)
-            {
-                var connectionEntity = clientQuery.GetSingletonRW<NetworkStreamDriver>()
-                    .ValueRW.Connect(clientWorld.EntityManager, clientEndpoint);
-
-                if (connectionEntity != Entity.Null)
-                {
-                    Debug.Log($"[NetworkConnectionManager] Host client connecting to localhost:{port}");
-                }
-            }
-        }
-    }
-
     private World GetServerWorld()
     {
         foreach (var world in World.All)
@@ -310,27 +244,39 @@ public class NetworkConnectionManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 로비로 돌아가기 (네트워크 연결 해제)
+    /// 로비로 돌아가기 (클라이언트 전용)
+    /// 서버는 절대 종료되지 않음
     /// </summary>
     public void ReturnToLobby()
     {
-        Debug.Log("[NetworkConnectionManager] Returning to lobby");
+        Debug.Log($"[NetworkConnectionManager] Returning to lobby (current mode: {currentMode})");
+
+        if (currentMode == NetworkMode.Client)
+        {
+            ReturnToLobbyAsClient();
+        }
+        else if (currentMode == NetworkMode.Server)
+        {
+            // 서버는 로비로 돌아가지 않음 - 계속 실행
+            Debug.LogWarning("[NetworkConnectionManager] Server cannot return to lobby - server must keep running");
+        }
+    }
+
+    /// <summary>
+    /// 클라이언트가 로비로 돌아갈 때
+    /// 서버 연결 끊고 로비로 이동
+    /// </summary>
+    private void ReturnToLobbyAsClient()
+    {
+        Debug.Log("[NetworkConnectionManager] Client returning to lobby");
         currentMode = NetworkMode.None;
 
-        // 모든 네트워크 World 제거
-        var worldsToDestroy = new List<World>();
-        foreach (var world in World.All)
+        // 클라이언트 World만 제거
+        var clientWorld = GetClientWorld();
+        if (clientWorld != null)
         {
-            if (world.IsClient() || world.IsServer())
-            {
-                worldsToDestroy.Add(world);
-            }
-        }
-
-        foreach (var world in worldsToDestroy)
-        {
-            Debug.Log($"[NetworkConnectionManager] Disposing {world.Name}");
-            world.Dispose();
+            Debug.Log($"[NetworkConnectionManager] Disposing client world: {clientWorld.Name}");
+            clientWorld.Dispose();
         }
 
         // 로컬 World 재생성

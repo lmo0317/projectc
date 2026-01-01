@@ -57,29 +57,11 @@ public class LobbySceneCreator : EditorWindow
         titleTmp.alignment = TextAlignmentOptions.Center;
         titleTmp.color = new Color(0.8f, 0.3f, 1f);  // 보라색
 
-        // 호스트로 시작 버튼 (개발/테스트용 - 서버+클라이언트 동시 실행)
-        var hostButtonObj = CreateButton(canvasObj.transform, "StartHostButton", "호스트로 시작", fontAsset);
-        var hostButtonRect = hostButtonObj.GetComponent<RectTransform>();
-        hostButtonRect.anchorMin = new Vector2(0.5f, 0.60f);
-        hostButtonRect.anchorMax = new Vector2(0.5f, 0.60f);
-        hostButtonRect.anchoredPosition = Vector2.zero;
-        hostButtonRect.sizeDelta = new Vector2(300, 70);
-
-        var hostButtonImage = hostButtonObj.GetComponent<Image>();
-        hostButtonImage.color = new Color(0.6f, 0.3f, 0.7f, 1f);  // 보라색
-
-        var hostButtonTmp = hostButtonObj.GetComponentInChildren<TextMeshProUGUI>();
-        if (hostButtonTmp != null)
-        {
-            hostButtonTmp.fontSize = 32;
-            hostButtonTmp.fontStyle = FontStyles.Bold;
-        }
-
-        // 서버 시작 버튼 (Dedicated 서버만)
-        var serverButtonObj = CreateButton(canvasObj.transform, "StartServerButton", "서버만 시작", fontAsset);
+        // 서버 시작 버튼 (Dedicated 서버)
+        var serverButtonObj = CreateButton(canvasObj.transform, "StartServerButton", "서버 시작", fontAsset);
         var serverButtonRect = serverButtonObj.GetComponent<RectTransform>();
-        serverButtonRect.anchorMin = new Vector2(0.5f, 0.48f);
-        serverButtonRect.anchorMax = new Vector2(0.5f, 0.48f);
+        serverButtonRect.anchorMin = new Vector2(0.5f, 0.55f);
+        serverButtonRect.anchorMax = new Vector2(0.5f, 0.55f);
         serverButtonRect.anchoredPosition = Vector2.zero;
         serverButtonRect.sizeDelta = new Vector2(300, 70);
 
@@ -96,16 +78,16 @@ public class LobbySceneCreator : EditorWindow
         // 서버 주소 입력 필드
         var addressInputObj = CreateInputField(canvasObj.transform, "AddressInput", "127.0.0.1", fontAsset);
         var addressInputRect = addressInputObj.GetComponent<RectTransform>();
-        addressInputRect.anchorMin = new Vector2(0.5f, 0.33f);
-        addressInputRect.anchorMax = new Vector2(0.5f, 0.33f);
+        addressInputRect.anchorMin = new Vector2(0.5f, 0.40f);
+        addressInputRect.anchorMax = new Vector2(0.5f, 0.40f);
         addressInputRect.anchoredPosition = Vector2.zero;
         addressInputRect.sizeDelta = new Vector2(300, 50);
 
         // 서버 접속 버튼
         var connectButtonObj = CreateButton(canvasObj.transform, "ConnectButton", "서버 접속", fontAsset);
         var connectButtonRect = connectButtonObj.GetComponent<RectTransform>();
-        connectButtonRect.anchorMin = new Vector2(0.5f, 0.21f);
-        connectButtonRect.anchorMax = new Vector2(0.5f, 0.21f);
+        connectButtonRect.anchorMin = new Vector2(0.5f, 0.28f);
+        connectButtonRect.anchorMax = new Vector2(0.5f, 0.28f);
         connectButtonRect.anchoredPosition = Vector2.zero;
         connectButtonRect.sizeDelta = new Vector2(300, 70);
 
@@ -120,10 +102,10 @@ public class LobbySceneCreator : EditorWindow
         }
 
         // 상태 텍스트
-        var statusObj = CreateText(canvasObj.transform, "StatusText", "호스트로 시작하거나 서버에 접속하세요", fontAsset);
+        var statusObj = CreateText(canvasObj.transform, "StatusText", "서버를 시작하거나 서버에 접속하세요", fontAsset);
         var statusRect = statusObj.GetComponent<RectTransform>();
-        statusRect.anchorMin = new Vector2(0.5f, 0.10f);
-        statusRect.anchorMax = new Vector2(0.5f, 0.10f);
+        statusRect.anchorMin = new Vector2(0.5f, 0.12f);
+        statusRect.anchorMax = new Vector2(0.5f, 0.12f);
         statusRect.anchoredPosition = Vector2.zero;
         statusRect.sizeDelta = new Vector2(600, 50);
 
@@ -142,7 +124,6 @@ public class LobbySceneCreator : EditorWindow
         // SerializedObject를 통해 private 필드 설정
         var serializedLobbyUI = new SerializedObject(lobbyUI);
         serializedLobbyUI.FindProperty("startServerButton").objectReferenceValue = serverButtonObj.GetComponent<Button>();
-        serializedLobbyUI.FindProperty("startHostButton").objectReferenceValue = hostButtonObj.GetComponent<Button>();
         serializedLobbyUI.FindProperty("connectButton").objectReferenceValue = connectButtonObj.GetComponent<Button>();
         serializedLobbyUI.FindProperty("addressInput").objectReferenceValue = addressInputObj.GetComponent<TMP_InputField>();
         serializedLobbyUI.FindProperty("titleText").objectReferenceValue = titleTmp;
@@ -164,9 +145,8 @@ public class LobbySceneCreator : EditorWindow
         Debug.Log($"로비 씬이 생성되었습니다: {scenePath}");
         Debug.Log("Build Settings에서 LobbyScene을 첫 번째 씬으로 설정하세요.");
         Debug.Log("사용법:");
-        Debug.Log("  - '호스트로 시작' = 서버+클라이언트 동시 실행 (테스트용, 혼자 플레이 가능)");
-        Debug.Log("  - '서버만 시작' = Dedicated 서버만 실행 (클라이언트 접속 대기)");
-        Debug.Log("  - '서버 접속' = 클라이언트로 다른 서버에 연결");
+        Debug.Log("  - '서버 시작' = Dedicated 서버 실행 (클라이언트 접속 대기)");
+        Debug.Log("  - '서버 접속' = 클라이언트로 서버에 연결");
 
         // 선택
         Selection.activeGameObject = canvasObj;

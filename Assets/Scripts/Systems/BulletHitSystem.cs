@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -38,6 +39,16 @@ public partial struct BulletHitSystem : ISystem
         {
             playerModifiers = modifiers.ValueRO;
             break;  // 첫 번째 살아있는 플레이어 사용
+        }
+
+        // InGame 상태인 연결 목록 수집 (RPC 전송용)
+        var inGameConnections = new NativeList<Entity>(Allocator.Temp);
+        foreach (var (networkId, connectionEntity) in
+                 SystemAPI.Query<RefRO<NetworkId>>()
+                     .WithAll<NetworkStreamInGame>()
+                     .WithEntityAccess())
+        {
+            inGameConnections.Add(connectionEntity);
         }
 
         // 모든 총알에 대해
@@ -81,15 +92,21 @@ public partial struct BulletHitSystem : ISystem
                     // 데미지 적용
                     enemyHealth.ValueRW.Value -= (int)finalDamage;
 
-                    // 피격 이펙트 RPC 전송 (모든 클라이언트에게)
-                    var hitEffectRpcEntity = ecb.CreateEntity();
-                    ecb.AddComponent(hitEffectRpcEntity, new HitEffectRpc
+                    // 피격 이펙트 RPC 전송 (InGame 상태인 클라이언트에게만)
+                    foreach (var connectionEntity in inGameConnections)
                     {
-                        Position = enemyPos,
-                        Damage = (int)finalDamage,
-                        IsCritical = isCritical
-                    });
-                    ecb.AddComponent<SendRpcCommandRequest>(hitEffectRpcEntity);
+                        var hitEffectRpcEntity = ecb.CreateEntity();
+                        ecb.AddComponent(hitEffectRpcEntity, new HitEffectRpc
+                        {
+                            Position = enemyPos,
+                            Damage = (int)finalDamage,
+                            IsCritical = isCritical
+                        });
+                        ecb.AddComponent(hitEffectRpcEntity, new SendRpcCommandRequest
+                        {
+                            TargetConnection = connectionEntity
+                        });
+                    }
 
                     // Enemy 체력이 0 이하면 삭제
                     if (enemyHealth.ValueRO.Value <= 0)
@@ -99,17 +116,22 @@ public partial struct BulletHitSystem : ISystem
                         // Star 아이템 스폰
                         if (hasStarSpawnConfig)
                         {
-                            SpawnStar(ref ecb, ref starSpawnConfig.ValueRW, enemyPos);
+                            SpawnStar(ref ecb, ref starSpawnConfig.ValueRW, enemyPos, inGameConnections);
                         }
 
-                        // RPC 생성: 모든 Client + Server에게 KillCount +1 브로드캐스트
-                        var rpcEntity = ecb.CreateEntity();
-                        ecb.AddComponent(rpcEntity, new KillCountRpc
+                        // RPC 생성: InGame 상태인 Client에게만 KillCount +1 전송
+                        foreach (var connectionEntity in inGameConnections)
                         {
-                            IncrementAmount = 1
-                        });
-                        ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
-                        // TargetConnection 생략 → 모든 Client에게 브로드캐스트
+                            var rpcEntity = ecb.CreateEntity();
+                            ecb.AddComponent(rpcEntity, new KillCountRpc
+                            {
+                                IncrementAmount = 1
+                            });
+                            ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
+                            {
+                                TargetConnection = connectionEntity
+                            });
+                        }
                     }
 
                     // 총알 삭제
@@ -119,13 +141,15 @@ public partial struct BulletHitSystem : ISystem
             }
         }
 
+        inGameConnections.Dispose();
+
         // BeginSimulationEntityCommandBufferSystem이 자동으로 Playback 처리
     }
 
     /// <summary>
     /// Star 아이템 스폰 (서버에서 직접 엔티티 생성 + 클라이언트에 RPC 전송)
     /// </summary>
-    private void SpawnStar(ref EntityCommandBuffer ecb, ref StarSpawnConfig config, float3 position)
+    private void SpawnStar(ref EntityCommandBuffer ecb, ref StarSpawnConfig config, float3 position, NativeList<Entity> inGameConnections)
     {
         // 서버에서 직접 엔티티 생성
         var starEntity = ecb.CreateEntity();
@@ -142,13 +166,19 @@ public partial struct BulletHitSystem : ISystem
         ecb.AddComponent(starEntity, new StarId { Value = starId });
         ecb.AddComponent(starEntity, LocalTransform.FromPosition(spawnPos));
 
-        // 클라이언트에 Star 스폰 RPC 전송
-        var rpcEntity = ecb.CreateEntity();
-        ecb.AddComponent(rpcEntity, new StarSpawnRpc
+        // 클라이언트에 Star 스폰 RPC 전송 (InGame 상태인 클라이언트에게만)
+        foreach (var connectionEntity in inGameConnections)
         {
-            StarId = starId,
-            Position = spawnPos
-        });
-        ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+            var rpcEntity = ecb.CreateEntity();
+            ecb.AddComponent(rpcEntity, new StarSpawnRpc
+            {
+                StarId = starId,
+                Position = spawnPos
+            });
+            ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
+            {
+                TargetConnection = connectionEntity
+            });
+        }
     }
 }

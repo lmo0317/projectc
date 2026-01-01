@@ -50,6 +50,95 @@ public class BuffDebugWindow : EditorWindow
         window.minSize = new Vector2(400, 500);
     }
 
+    /// <summary>
+    /// 단축키로 플레이어 즉사 (Ctrl + Alt + Shift + K)
+    /// </summary>
+    [MenuItem("Tools/Kill Player (Debug) %&#k")]
+    public static void KillPlayerShortcut()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("[BuffDebug] 게임이 실행 중이 아닙니다.");
+            return;
+        }
+
+        // 서버 월드가 있으면 직접 처리, 없으면 RPC 전송
+        World serverWorld = null;
+        World clientWorld = null;
+
+        foreach (var world in World.All)
+        {
+            if (!world.IsCreated) continue;
+            if (world.IsServer()) serverWorld = world;
+            if (world.IsClient()) clientWorld = world;
+        }
+
+        if (serverWorld != null)
+        {
+            // 서버가 있으면 직접 처리
+            KillPlayerInWorld(serverWorld);
+        }
+        else if (clientWorld != null)
+        {
+            // 클라이언트만 있으면 RPC 전송
+            SendKillRpc(clientWorld);
+        }
+        else
+        {
+            Debug.LogWarning("[BuffDebug] 네트워크 월드를 찾을 수 없습니다.");
+        }
+    }
+
+    private static void KillPlayerInWorld(World world)
+    {
+        var entityManager = world.EntityManager;
+        var query = entityManager.CreateEntityQuery(
+            ComponentType.ReadWrite<PlayerHealth>(),
+            ComponentType.ReadOnly<PlayerTag>()
+        );
+
+        var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+        if (entities.Length > 0)
+        {
+            var entity = entities[0];
+
+            var health = entityManager.GetComponentData<PlayerHealth>(entity);
+            health.CurrentHealth = 0;
+            entityManager.SetComponentData(entity, health);
+
+            if (entityManager.HasComponent<PlayerDead>(entity))
+            {
+                entityManager.SetComponentEnabled<PlayerDead>(entity, true);
+            }
+
+            if (entityManager.HasComponent<Unity.Transforms.LocalTransform>(entity))
+            {
+                var transform = entityManager.GetComponentData<Unity.Transforms.LocalTransform>(entity);
+                transform.Position = new Unity.Mathematics.float3(0, -1000, 0);
+                entityManager.SetComponentData(entity, transform);
+            }
+
+            Debug.Log($"[BuffDebug] 플레이어 즉사 처리됨 (World: {world.Name})");
+        }
+        else
+        {
+            Debug.LogWarning("[BuffDebug] 플레이어를 찾을 수 없습니다.");
+        }
+        entities.Dispose();
+    }
+
+    private static void SendKillRpc(World clientWorld)
+    {
+        var entityManager = clientWorld.EntityManager;
+
+        // RPC Entity 생성
+        var rpcEntity = entityManager.CreateEntity();
+        entityManager.AddComponent<DebugKillRequestRpc>(rpcEntity);
+        entityManager.AddComponent<SendRpcCommandRequest>(rpcEntity);
+
+        Debug.Log("[BuffDebug] 서버로 Kill RPC 전송됨");
+    }
+
     private void OnInspectorUpdate()
     {
         // 자동 새로고침
@@ -417,26 +506,30 @@ public class BuffDebugWindow : EditorWindow
 
     private void KillPlayer()
     {
-        var serverWorld = GetServerWorld();
-        if (serverWorld == null)
-            return;
+        // 서버 월드가 있으면 직접 처리, 없으면 RPC 전송
+        World serverWorld = null;
+        World clientWorld = null;
 
-        var entityManager = serverWorld.EntityManager;
-        var query = entityManager.CreateEntityQuery(
-            ComponentType.ReadWrite<PlayerHealth>(),
-            ComponentType.ReadOnly<PlayerTag>()
-        );
-
-        var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
-        if (entities.Length > 0)
+        foreach (var world in World.All)
         {
-            var entity = entities[0];
-            var health = entityManager.GetComponentData<PlayerHealth>(entity);
-            health.CurrentHealth = 0;  // 체력을 0으로 설정
-            entityManager.SetComponentData(entity, health);
-            Debug.Log("[BuffDebug] 플레이어 체력을 0으로 설정 (죽음 트리거)");
+            if (!world.IsCreated) continue;
+            if (world.IsServer()) serverWorld = world;
+            if (world.IsClient()) clientWorld = world;
         }
-        entities.Dispose();
+
+        if (serverWorld != null)
+        {
+            KillPlayerInWorld(serverWorld);
+        }
+        else if (clientWorld != null)
+        {
+            SendKillRpc(clientWorld);
+        }
+        else
+        {
+            Debug.LogWarning("[BuffDebug] 네트워크 월드를 찾을 수 없습니다.");
+        }
+
         RefreshData();
     }
 
