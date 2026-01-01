@@ -213,10 +213,34 @@ public class BuffSelectionUI : MonoBehaviour
 
         _isWaiting = true;
 
+        // WaitingPanel이 없으면 씬에서 찾기
+        if (WaitingPanel == null)
+        {
+            WaitingPanel = GameObject.Find("BuffWaitingPanel");
+            if (WaitingPanel != null)
+            {
+                Debug.Log("[BuffSelectionUI] BuffWaitingPanel을 씬에서 찾음");
+                // WaitingText도 찾기
+                if (WaitingText == null)
+                {
+                    var textObj = WaitingPanel.GetComponentInChildren<TextMeshProUGUI>();
+                    if (textObj != null)
+                    {
+                        WaitingText = textObj;
+                    }
+                }
+            }
+        }
+
         // 대기 패널 활성화
         if (WaitingPanel != null)
         {
             WaitingPanel.SetActive(true);
+            Debug.Log("[BuffSelectionUI] 대기 UI 표시");
+        }
+        else
+        {
+            Debug.LogWarning("[BuffSelectionUI] WaitingPanel이 null입니다! Inspector에서 연결하거나 BuffWaitingPanel 오브젝트를 생성하세요.");
         }
 
         // 대기 텍스트 설정
@@ -224,8 +248,6 @@ public class BuffSelectionUI : MonoBehaviour
         {
             WaitingText.text = "다른 플레이어가 버프를 선택 중입니다...";
         }
-
-        Debug.Log("[BuffSelectionUI] 대기 UI 표시");
     }
 
     /// <summary>

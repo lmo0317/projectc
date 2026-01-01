@@ -7,9 +7,9 @@ using UnityEngine;
 /// 버프 선택 클라이언트 시스템
 /// 서버에서 ShowBuffSelectionRpc를 받으면 UI 표시
 /// GamePauseRpc로 다른 플레이어 대기 UI 처리
-/// Server/Client 양쪽에서 실행 (싱글플레이 지원)
+/// 클라이언트에서만 실행 (UI 처리가 필요)
 /// </summary>
-[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation)]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 public partial struct BuffSelectionClientSystem : ISystem
 {
@@ -22,7 +22,7 @@ public partial struct BuffSelectionClientSystem : ISystem
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        // 로컬 플레이어의 NetworkId 가져오기
+        // 로컬 플레이어의 NetworkId 가져오기 (여러 방법 시도)
         int localNetworkId = GetLocalPlayerNetworkId(ref state);
 
         // GamePauseRpc 처리 (게임 일시정지/재개)
@@ -36,21 +36,34 @@ public partial struct BuffSelectionClientSystem : ISystem
 
             Debug.Log($"[BuffSelectionClientSystem] GamePauseRpc 수신: IsPaused={isPaused}, SelectingPlayer={selectingPlayerId}, LocalPlayer={localNetworkId}");
 
+            if (BuffSelectionUI.Instance == null)
+            {
+                Debug.LogWarning("[BuffSelectionClientSystem] BuffSelectionUI.Instance가 없습니다!");
+                ecb.DestroyEntity(entity);
+                continue;
+            }
+
             if (isPaused)
             {
                 // 버프 선택 중인 플레이어가 나 자신이 아니면 대기 UI 표시
-                if (selectingPlayerId != localNetworkId && BuffSelectionUI.Instance != null)
+                // 자기 자신인지 확인하는 로직 개선
+                bool isMySelection = (localNetworkId > 0 && selectingPlayerId == localNetworkId);
+
+                if (!isMySelection)
                 {
+                    Debug.Log($"[BuffSelectionClientSystem] 다른 플레이어({selectingPlayerId})가 선택 중 - 대기 UI 표시");
                     BuffSelectionUI.Instance.ShowWaiting();
+                }
+                else
+                {
+                    Debug.Log($"[BuffSelectionClientSystem] 내가 선택 중 - 대기 UI 표시 안 함");
                 }
             }
             else
             {
                 // 게임 재개 - 모든 UI 숨기기
-                if (BuffSelectionUI.Instance != null)
-                {
-                    BuffSelectionUI.Instance.HideAll();
-                }
+                Debug.Log($"[BuffSelectionClientSystem] 게임 재개 - UI 숨기기");
+                BuffSelectionUI.Instance.HideAll();
             }
 
             // RPC 엔티티 삭제
@@ -133,14 +146,22 @@ public partial struct BuffSelectionClientSystem : ISystem
 
     /// <summary>
     /// 로컬 플레이어의 NetworkId 가져오기
+    /// 여러 방법으로 시도하여 확실하게 찾기
     /// </summary>
     private int GetLocalPlayerNetworkId(ref SystemState state)
     {
-        // GhostOwnerIsLocal을 가진 플레이어의 NetworkId 반환
+        // 1. GhostOwnerIsLocal을 가진 플레이어의 NetworkId 반환
         foreach (var ghostOwner in SystemAPI.Query<RefRO<GhostOwner>>()
                      .WithAll<PlayerTag, GhostOwnerIsLocal>())
         {
             return ghostOwner.ValueRO.NetworkId;
+        }
+
+        // 2. NetworkStreamConnection에서 NetworkId 가져오기 (클라이언트 연결 정보)
+        foreach (var networkId in SystemAPI.Query<RefRO<NetworkId>>()
+                     .WithAll<NetworkStreamConnection>())
+        {
+            return networkId.ValueRO.Value;
         }
 
         // 없으면 0 반환
