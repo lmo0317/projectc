@@ -1,6 +1,10 @@
 using Unity.Burst;
 using Unity.Entities;
 
+/// <summary>
+/// 총알 생명주기 시스템
+/// 서버에서 버프 선택 중이면 생명주기 감소 일시정지
+/// </summary>
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(BulletMovementSystem))]
 [BurstCompile]
@@ -15,6 +19,13 @@ public partial struct BulletLifetimeSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        // 버프 선택 중이면 총알 생명주기 감소 중지
+        foreach (var sessionState in SystemAPI.Query<RefRO<GameSessionState>>())
+        {
+            if (sessionState.ValueRO.IsGamePaused)
+                return;
+        }
+
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
