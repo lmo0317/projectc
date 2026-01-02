@@ -8,7 +8,7 @@ public class MagnetRangeIndicator : MonoBehaviour
     public static MagnetRangeIndicator Instance { get; private set; }
 
     [Header("Settings")]
-    public Color RangeColor = new Color(0.3f, 1f, 0.5f, 0.15f);  // 초록색, 알파 0.15
+    public Color RangeColor = new Color(0.3f, 1f, 0.5f, 0.25f);  // 초록색, 알파 0.25
     public int Segments = 64;  // 원의 세그먼트 수
 
     private GameObject rangeObject;
@@ -100,7 +100,7 @@ public class MagnetRangeIndicator : MonoBehaviour
 
         // 중심점
         vertices[0] = Vector3.zero;
-        colors[0] = new Color(RangeColor.r, RangeColor.g, RangeColor.b, RangeColor.a * 0.5f);  // 중심은 조금 더 진하게
+        colors[0] = new Color(RangeColor.r, RangeColor.g, RangeColor.b, RangeColor.a * 0.6f);  // 중심은 조금 더 진하게
 
         // 외곽 버텍스
         float angleStep = 360f / Segments;
@@ -112,7 +112,7 @@ public class MagnetRangeIndicator : MonoBehaviour
                 Mathf.Sin(angle) * radius,
                 0f
             );
-            colors[i + 1] = new Color(RangeColor.r, RangeColor.g, RangeColor.b, RangeColor.a * 0.3f);  // 외곽은 더 투명하게
+            colors[i + 1] = new Color(RangeColor.r, RangeColor.g, RangeColor.b, RangeColor.a * 0.4f);  // 외곽은 더 투명하게
         }
 
         // 삼각형 생성

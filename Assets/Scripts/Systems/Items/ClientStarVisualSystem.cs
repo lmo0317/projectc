@@ -36,10 +36,14 @@ public partial struct ClientStarVisualSystem : ISystem
             // 위치 설정
             ecb.SetComponent(starVisual, LocalTransform.FromPosition(rpc.ValueRO.Position));
 
-            // 클라이언트용 Star 컴포넌트 추가
+            // 클라이언트용 Star 컴포넌트 추가 (랜덤 시드 초기화)
             ecb.AddComponent(starVisual, new ClientStarVisual
             {
-                StarId = rpc.ValueRO.StarId
+                StarId = rpc.ValueRO.StarId,
+                SpiralAngle = 0f,
+                MagnetStartTime = 0f,
+                RandomSeed = (uint)(rpc.ValueRO.StarId * 73856093), // StarId 기반 랜덤 시드
+                IsBeingPulled = 0
             });
 
             // RPC 엔티티 삭제
@@ -93,8 +97,13 @@ public partial struct ClientStarVisualSystem : ISystem
 
 /// <summary>
 /// 클라이언트 Star 비주얼 마커 컴포넌트
+/// 자석 효과를 위한 추가 데이터 포함
 /// </summary>
 public struct ClientStarVisual : IComponentData
 {
     public int StarId;
+    public float SpiralAngle;        // 나선 회전 각도 (radians)
+    public float MagnetStartTime;    // 자석에 끌리기 시작한 시간
+    public uint RandomSeed;          // 각 스타마다 다른 움직임을 위한 랜덤 시드
+    public byte IsBeingPulled;       // 자석에 끌리고 있는지 (0 or 1)
 }
