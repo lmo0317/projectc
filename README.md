@@ -28,6 +28,8 @@ https://github.com/lmo0317/projectc/assets/1/introduce.mp4
 
 ### 🎮 플레이 영상
 
+https://github.com/user-attachments/assets/07e5c5ed-5831-4463-ad59-74e8c83206cd
+
 https://github.com/lmo0317/projectc/assets/1/play.mp4
 
 > 💡 위 링크가 작동하지 않으면: [직접 보기](movie/play.avi)
