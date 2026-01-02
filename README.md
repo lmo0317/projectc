@@ -14,6 +14,38 @@
 
 ---
 
+## 📹 게임 영상
+
+<div align="center">
+
+### 🎬 소개 영상
+
+https://github.com/lmo0317/projectc/assets/1/introduce.mp4
+
+> 💡 위 링크가 작동하지 않으면: [직접 보기](movie/introduce.mp4)
+
+### 🎮 플레이 영상
+
+https://github.com/lmo0317/projectc/assets/1/play.mp4
+
+> 💡 위 링크가 작동하지 않으면: [직접 보기](movie/play.avi)
+
+---
+
+**GitHub에서 영상을 보려면:**
+1. 이 README를 편집 모드로 열기 (또는 Issues 생성)
+2. 영상 파일(`introduce.mp4`, `play.avi`)을 드래그 앤 드롭
+3. 자동 생성된 `https://github.com/.../*.mp4` URL로 위 placeholder 교체
+
+> ⚠️ `.avi` 파일은 GitHub에서 지원하지 않을 수 있습니다. `ffmpeg`로 `.mp4`로 변환 권장:
+> ```bash
+> ffmpeg -i movie/play.avi -c:v libx264 -c:a aac movie/play.mp4
+> ```
+
+</div>
+
+---
+
 ## 🎮 게임 소개
 
 **뱀파이어 서바이벌** 스타일의 3D 우주 슈팅 게임으로, **Unity DOTS (Data-Oriented Technology Stack)**와 **Netcode for Entities**를 활용한 고성능 멀티플레이어 게임입니다.
