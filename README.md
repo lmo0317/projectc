@@ -20,6 +20,8 @@
 
 ### 🎬 소개 영상
 
+D:\work\dev\game\projectc\movie\introduce.mp4
+
 https://github.com/lmo0317/projectc/assets/1/introduce.mp4
 
 > 💡 위 링크가 작동하지 않으면: [직접 보기](movie/introduce.mp4)
