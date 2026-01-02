@@ -16,16 +16,17 @@
 
 ## 📹 게임 영상
 
-<div align="center">
+### 🎬 소개 영상
 
-| 제목 | 영상 |
-|:---:|:---|
-| 🎬 **소개 영상** | https://github.com/user-attachments/assets/INTRODUCE_VIDEO_URL_HERE |
-| 🎮 **플레이 영상** | https://github.com/user-attachments/assets/07e5c5ed-5831-4463-ad59-74e8c83206cd |
+https://github.com/user-attachments/assets/INTRODUCE_VIDEO_URL_HERE
 
-> 💡 **소개 영상 업로드 방법:** GitHub Issues에 `movie/introduce.mp4` 파일을 드래그 앤 드롭하여 생성된 URL로 위의 `INTRODUCE_VIDEO_URL_HERE` 부분을 교체하세요.
+<sub>💡 **업로드 필요:** GitHub Issues에 `movie/introduce.mp4`를 드래그 앤 드롭하여 생성된 URL로 위 링크를 교체하세요.</sub>
 
-</div>
+---
+
+### 🎮 플레이 영상
+
+https://github.com/user-attachments/assets/07e5c5ed-5831-4463-ad59-74e8c83206cd
 
 ---
 
