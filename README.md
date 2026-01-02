@@ -1,969 +1,899 @@
-# ProjectC - 프로젝트 기술 문서
+# ProjectC - Unity DOTS 멀티플레이어 우주 슈팅 게임
 
-## 개요
+<div align="center">
 
-Unity 6 (6000.1.7f1) 기반의 **멀티플레이어 우주 슈팅 게임**입니다. 사이버펑크 레트로 스타일의 시각적 테마와 함께, Unity DOTS (Data-Oriented Technology Stack)와 Netcode for Entities를 활용한 고성능 네트워크 게임입니다.
+**Unity Entities + Netcode for Entities 기반 고성능 서바이벌 슈터**
 
-**기술 스택:**
-- Unity Entities 패키지 (ECS 아키텍처)
-- Netcode for Entities (서버-클라이언트 동기화)
-- Burst Compiler (고성능 연산)
-- Unity Physics (물리 충돌)
-- URP (Universal Render Pipeline)
+[![Unity](https://img.shields.io/badge/Unity-6000.1.7f1-black?logo=unity)](https://unity.com/)
+[![Entities](https://img.shields.io/badge/Entities-1.3.5-blue)]()
+[![Netcode](https://img.shields.io/badge/Netcode-1.3.5-green)]()
+
+[게임 소개](#-게임-소개) • [빠른 시작](#-빠른-시작) • [아키텍처](#-아키텍처-상세) • [개발 가이드](#-개발-가이드)
+
+</div>
 
 ---
 
-## 1. DOTS (Data-Oriented Technology Stack) 아키텍처
+## 🎮 게임 소개
 
-### 1.1 ECS 개념
+**뱀파이어 서바이벌** 스타일의 3D 우주 슈팅 게임으로, **Unity DOTS (Data-Oriented Technology Stack)**와 **Netcode for Entities**를 활용한 고성능 멀티플레이어 게임입니다.
 
-ECS는 세 가지 핵심 요소로 구성됩니다:
+### 주요 특징
 
-| 요소 | 설명 | 예시 |
-|------|------|------|
-| **Entity** | 고유 식별자 (경량화된 GameObject) | 플레이어, 적, 총알 |
-| **Component** | 데이터만 포함 (로직 없음) | `PlayerHealth`, `MovementSpeed` |
-| **System** | 로직 처리 (데이터 변환) | `PlayerMovementSystem`, `BulletHitSystem` |
+- 🚀 **고성능 최적화**: ECS + Burst Compiler로 수천 개의 Entity 동시 처리
+- 🌐 **멀티플레이어**: Netcode for Entities 기반 서버-클라이언트 아키텍처
+- 🎨 **사이버펑크 레트로**: Synthwave 스타일의 네온 비주얼
+- ⚡ **자동 발사**: 가장 가까운 적을 자동 타겟팅하는 미사일 시스템
+- 🎯 **버프 시스템**: 8종류의 버프, 각 5레벨까지 성장
+- 💎 **아이템 수집**: 별 수집 → 포인트 임계값 → 버프 언락
+- 🧲 **자석 효과**: 나선형 궤적으로 아이템을 끌어당기는 시각 효과
 
-### 1.2 Component 목록
+### 게임플레이
 
-#### 플레이어 관련 Component
+1. **조작**: WASD로 이동
+2. **전투**: 자동 발사되는 미사일로 적 처치
+3. **성장**: 별 수집 → 버프 선택 → 능력치 강화
+4. **생존**: 끊임없이 스폰되는 적들을 피하며 최대한 오래 생존
 
-| Component | 파일 위치 | 설명 |
-|-----------|-----------|------|
-| `PlayerTag` | Components/PlayerTag.cs | 플레이어 Entity 식별 태그 |
-| `PlayerInput` | Components/PlayerInput.cs | 플레이어 입력 (IInputComponentData) |
-| `PlayerHealth` | Components/PlayerHealth.cs | 체력 (CurrentHealth, MaxHealth) |
-| `PlayerDead` | Components/PlayerDead.cs | 사망 상태 (비활성화 가능) |
-| `PlayerStarPoints` | Components/PlayerStarPoints.cs | 별 포인트 (버프 언락용) |
-| `MovementSpeed` | Components/MovementSpeed.cs | 이동 속도 |
-| `AutoShootConfig` | Components/AutoShootConfig.cs | 자동 발사 설정 |
+---
+
+## 🚀 빠른 시작
+
+### 1. 프로젝트 열기
+
+```bash
+# 1. 저장소 클론
+git clone https://github.com/lmo0317/projectc.git
+cd projectc
+
+# 2. Unity Hub에서 프로젝트 열기
+- Unity Hub 실행
+- 프로젝트 추가: d:\work\dev\game\projectc
+- Unity 버전: 6000.1.7f1
+```
+
+### 2. 게임 실행
+
+#### 싱글 플레이어 (빠른 테스트)
+1. `Assets/Scenes/GameSceneSpace/GameSceneSpace.unity` 열기
+2. Play 버튼 (Ctrl+P)
+3. 자동으로 로컬 서버+클라이언트 시작
+
+#### 멀티플레이어
+1. `Assets/Scenes/LobbyScene.unity` 열기
+2. "Start Server" 또는 "Start Client" 선택
+3. 클라이언트는 서버 IP 입력 (기본: 127.0.0.1:7979)
+
+---
+
+## 🏗 아키텍처 상세
+
+### DOTS (Data-Oriented Technology Stack) 구조
+
+Unity DOTS는 **데이터 지향 설계**로 CPU 캐시 효율성을 극대화하여 고성능을 달성합니다.
+
+#### 1. ECS 패턴의 핵심 개념
+
+**전통적인 OOP vs ECS:**
+
+```
+[OOP - GameObject]                    [ECS - Entity Component System]
+┌─────────────────┐                   ┌──────────────────────────────┐
+│  PlayerObject   │                   │  Entity (ID만 존재)          │
+│  ├─ health      │                   │  - Index: 42                 │
+│  ├─ position    │                   │  - Version: 1                │
+│  ├─ Update()    │                   └──────────────────────────────┘
+│  ├─ TakeDamage()│                             │
+│  └─ Move()      │                             │ Has Components
+└─────────────────┘                             ↓
+                                      ┌──────────────────────────────┐
+❌ 문제점:                            │  Components (데이터만)       │
+- 데이터와 로직이 혼재              │  ├─ PlayerHealth: 100        │
+- CPU 캐시 미스 빈번                │  ├─ LocalTransform: (5,0,0) │
+- 다형성으로 인한 간접 참조        │  └─ MovementSpeed: 5.0       │
+                                      └──────────────────────────────┘
+                                                │
+                                                │ Processed by
+                                                ↓
+                                      ┌──────────────────────────────┐
+                                      │  Systems (로직만)            │
+                                      │  PlayerMovementSystem        │
+                                      │  PlayerDamageSystem          │
+                                      └──────────────────────────────┘
+
+✅ 장점:
+- 메모리 연속 배치 (캐시 효율 ↑)
+- Burst 컴파일 가능 (SIMD 최적화)
+- Job System 병렬화 용이
+```
+
+#### 2. Entity - Component - System 연결 구조
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Unity Editor (Authoring)                     │
+│  GameObject (PlayerAuthoring MonoBehaviour)                     │
+│  Inspector: FireRate = 0.25, BulletPrefab = ...                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ Baking (빌드/재생 시 자동 실행)
+                              │ Baker<PlayerAuthoring>.Bake()
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                     ECS World (Runtime)                         │
+│                                                                 │
+│  Entity { Index: 42, Version: 1 }                               │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │  Archetype: PlayerTag + AutoShootConfig + LocalTransform  │ │
+│  │  (같은 Component 조합을 가진 Entity는 같은 Archetype)     │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│  Components (메모리 연속 배치):                                │
+│  ├─ AutoShootConfig { Interval: 0.25, Timer: 0, Prefab: ... } │
+│  ├─ LocalTransform  { Position: (0,0,0), Rotation, Scale }    │
+│  └─ PlayerTag       { /* empty marker */ }                    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ Query & Iterate
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                   System Update Loop                            │
+│                                                                 │
+│  SystemAPI.Query<RefRW<AutoShootConfig>, RefRO<LocalTransform>>│
+│             .WithAll<PlayerTag>()                               │
+│                                                                 │
+│  → Archetype 기반 빠른 필터링                                   │
+│  → 메모리 연속 접근으로 캐시 효율 극대화                        │
+│  → Burst 컴파일로 SIMD 명령어 활용                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Archetype 개념:**
+- 같은 Component 조합 = 같은 Archetype
+- 예: `PlayerTag + Health + Transform` → Archetype A
+- 예: `EnemyTag + Health + Transform` → Archetype B
+- Archetype별로 메모리 연속 배치 → 캐시 효율 ↑
+
+#### 3. 실제 구현: 플레이어 자동 발사 시스템
+
+**단계 1: Component 정의 (순수 데이터)**
 
 ```csharp
-// PlayerHealth - 네트워크 동기화 컴포넌트 예시
-[GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
-public struct PlayerHealth : IComponentData
+// Components/AutoShootConfig.cs
+using Unity.Entities;
+
+/// <summary>
+/// 자동 발사 설정 - 데이터만 포함, 로직 없음
+/// </summary>
+public struct AutoShootConfig : IComponentData
 {
-    [GhostField] public float CurrentHealth;
-    [GhostField] public float MaxHealth;
+    public float Interval;        // 발사 간격 (초)
+    public float Timer;           // 다음 발사까지 남은 시간
+    public Entity BulletPrefab;   // 생성할 총알 Entity 프리팹
 }
 ```
 
-#### 적(Enemy) 관련 Component
+**왜 struct인가?**
+- ✅ 값 타입 → 메모리 연속 배치
+- ✅ GC 압박 없음 (Heap 할당 X)
+- ✅ Burst 컴파일 가능
 
-| Component | 파일 위치 | 설명 |
-|-----------|-----------|------|
-| `EnemyTag` | Components/EnemyTag.cs | 적 Entity 식별 태그 |
-| `EnemyHealth` | Components/EnemyHealth.cs | 적 체력 |
-| `EnemySpeed` | Components/EnemySpeed.cs | 적 이동 속도 |
-| `EnemySpawnConfig` | Components/EnemySpawnConfig.cs | 적 스폰 설정 |
-
-#### 투사체 관련 Component
-
-| Component | 파일 위치 | 설명 |
-|-----------|-----------|------|
-| `BulletTag` | Components/BulletTag.cs | 총알 식별 태그 |
-| `BulletDirection` | Components/BulletDirection.cs | 총알 이동 방향 |
-| `BulletSpeed` | Components/BulletSpeed.cs | 총알 속도 |
-| `BulletLifetime` | Components/BulletLifetime.cs | 총알 수명 |
-| `DamageValue` | Components/DamageValue.cs | 데미지 값 |
-| `MissileTag` | Components/MissileTag.cs | 미사일 식별 태그 |
-| `MissileTarget` | Components/MissileTarget.cs | 미사일 타겟 Entity |
-| `MissileTurnSpeed` | Components/MissileTurnSpeed.cs | 미사일 선회 속도 |
-
-#### 아이템 관련 Component
-
-| Component | 파일 위치 | 설명 |
-|-----------|-----------|------|
-| `StarTag` | Components/Items/StarTag.cs | 별 아이템 태그 |
-| `StarId` | Components/Items/StarId.cs | 별 고유 ID |
-| `StarValue` | Components/Items/StarValue.cs | 별 포인트 값 |
-| `StarSpawnConfig` | Components/Items/StarSpawnConfig.cs | 별 스폰 설정 |
-
-### 1.3 System 목록
-
-#### 게임플레이 System (서버 실행)
-
-| System | 파일 위치 | 설명 |
-|--------|-----------|------|
-| `AutoShootSystem` | Systems/AutoShootSystem.cs | 자동 발사 처리 |
-| `BulletMovementSystem` | Systems/BulletMovementSystem.cs | 총알 이동 |
-| `BulletHitSystem` | Systems/BulletHitSystem.cs | 총알-적 충돌 처리 |
-| `BulletLifetimeSystem` | Systems/BulletLifetimeSystem.cs | 총알 수명 관리 |
-| `MissileGuidanceSystem` | Systems/MissileGuidanceSystem.cs | 미사일 유도 |
-| `EnemySpawnSystem` | Systems/EnemySpawnSystem.cs | 적 스폰 |
-| `EnemyChaseSystem` | Systems/EnemyChaseSystem.cs | 적 추적 + 분산 AI |
-| `PlayerDamageSystem` | Systems/PlayerDamageSystem.cs | 플레이어 피격 처리 |
-| `GameOverSystem` | Systems/GameOverSystem.cs | 게임오버 처리 |
-| `StarCollectSystem` | Systems/Items/StarCollectSystem.cs | 별 수집 처리 |
+**단계 2: Authoring (GameObject → Entity 변환)**
 
 ```csharp
-// System 구조 예시 - EnemyChaseSystem
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]  // 서버에서만 실행
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(EnemySpawnSystem))]
-[BurstCompile]
-public partial struct EnemyChaseSystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        // 가장 가까운 플레이어 추적 + Enemy간 충돌 회피 로직
-    }
-}
-```
+// Authoring/PlayerAuthoring.cs
+using Unity.Entities;
+using UnityEngine;
 
-#### 클라이언트 전용 System
-
-| System | 파일 위치 | 설명 |
-|--------|-----------|------|
-| `GatherPlayerInputSystem` | Systems/Network/GatherPlayerInputSystem.cs | 입력 수집 |
-| `ClientStarVisualSystem` | Systems/Items/ClientStarVisualSystem.cs | 별 시각화 |
-| `ClientMagnetVisualSystem` | Systems/Items/ClientMagnetVisualSystem.cs | 자석 범위 시각화 |
-| `HitEffectClientSystem` | Systems/Network/HitEffectClientSystem.cs | 피격 이펙트 |
-| `BuffSelectionClientSystem` | Systems/Buffs/BuffSelectionClientSystem.cs | 버프 선택 UI |
-
-### 1.4 Authoring (Baker)
-
-Authoring 클래스는 Unity Editor의 GameObject를 ECS Entity로 변환합니다.
-
-| Authoring | 파일 위치 | 설명 |
-|-----------|-----------|------|
-| `PlayerAuthoring` | Authoring/PlayerAuthoring.cs | 플레이어 Entity 베이킹 |
-| `EnemyAuthoring` | Authoring/EnemyAuthoring.cs | 적 Entity 베이킹 |
-| `BulletAuthoring` | Authoring/BulletAuthoring.cs | 총알 Entity 베이킹 |
-| `EnemySpawnAuthoring` | Authoring/EnemySpawnAuthoring.cs | 적 스폰 설정 베이킹 |
-| `StarAuthoring` | Authoring/StarAuthoring.cs | 별 Entity 베이킹 |
-| `StarSpawnAuthoring` | Authoring/StarSpawnAuthoring.cs | 별 스폰 설정 베이킹 |
-
-```csharp
-// PlayerAuthoring 예시
+/// <summary>
+/// Unity Editor에서 설정 가능한 MonoBehaviour
+/// Baking 시점에 ECS Entity로 변환됨
+/// </summary>
 public class PlayerAuthoring : MonoBehaviour
 {
-    public float MoveSpeed = 5f;
-    public float FireRate = 0.25f;
+    [Header("발사 설정")]
+    public float FireRate = 0.25f;           // Inspector에서 조정 가능
     public GameObject BulletPrefab;
 
+    [Header("이동 설정")]
+    public float MoveSpeed = 5f;
+
+    /// <summary>
+    /// Baker: Editor 데이터 → ECS 데이터 변환
+    /// Sub Scene 저장 시 또는 Play 시 자동 실행
+    /// </summary>
     class Baker : Baker<PlayerAuthoring>
     {
         public override void Bake(PlayerAuthoring authoring)
         {
+            // 1. Entity 생성 (이 GameObject를 대표하는 Entity)
             var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
 
-            AddComponent(entity, new PlayerTag());
-            AddComponent(entity, new MovementSpeed { Value = authoring.MoveSpeed });
-            AddComponent<PlayerInput>(entity);
-            // ... 추가 컴포넌트들
+            // 2. Component 추가
+            AddComponent(entity, new PlayerTag());  // 마커 태그
+
+            AddComponent(entity, new MovementSpeed
+            {
+                Value = authoring.MoveSpeed
+            });
+
+            AddComponent(entity, new AutoShootConfig
+            {
+                Interval = authoring.FireRate,
+                Timer = 0f,
+                // GameObject 프리팹 → Entity 프리팹 변환
+                BulletPrefab = GetEntity(authoring.BulletPrefab, TransformUsageFlags.Dynamic)
+            });
         }
     }
 }
+```
+
+**Baking 시점:**
+- Sub Scene 저장 시 (Editor)
+- Play 버튼 클릭 시 (Runtime)
+- 빌드 시 (Build Time)
+
+**단계 3: System (로직 처리)**
+
+```csharp
+// Systems/AutoShootSystem.cs
+using Unity.Burst;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
+
+/// <summary>
+/// 플레이어 자동 발사 시스템
+/// 서버에서만 실행 (권위적 로직)
+/// </summary>
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]  // 서버 전용
+[UpdateInGroup(typeof(SimulationSystemGroup))]                // 시뮬레이션 단계
+[BurstCompile]                                                 // 네이티브 컴파일
+public partial struct AutoShootSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // PlayerTag가 있어야 시스템 실행
+        state.RequireForUpdate<PlayerTag>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        float deltaTime = SystemAPI.Time.DeltaTime;
+
+        // EntityCommandBuffer: 구조적 변경(생성/삭제)을 안전하게 기록
+        // SimulationSystemGroup 끝에 일괄 실행
+        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                          .CreateCommandBuffer(state.WorldUnmanaged);
+
+        // Query: PlayerTag를 가진 모든 Entity의 AutoShootConfig + LocalTransform 순회
+        foreach (var (shootConfig, transform, entity) in
+                 SystemAPI.Query<RefRW<AutoShootConfig>, RefRO<LocalTransform>>()
+                         .WithAll<PlayerTag>()
+                         .WithEntityAccess())
+        {
+            // 타이머 감소 (RefRW = Read-Write 참조)
+            shootConfig.ValueRW.Timer -= deltaTime;
+
+            if (shootConfig.ValueRW.Timer <= 0f)
+            {
+                // 타이머 리셋
+                shootConfig.ValueRW.Timer = shootConfig.ValueRO.Interval;
+
+                // 총알 Entity 생성 (ECB에 기록)
+                var bullet = ecb.Instantiate(shootConfig.ValueRO.BulletPrefab);
+
+                // 플레이어 위치에서 발사
+                ecb.SetComponent(bullet, LocalTransform.FromPosition(
+                    transform.ValueRO.Position
+                ));
+
+                // 방향 설정 (여기서는 위쪽)
+                ecb.SetComponent(bullet, new BulletDirection
+                {
+                    Value = new float3(0, 0, 1)
+                });
+            }
+        }
+    }
+}
+```
+
+**핵심 개념 정리:**
+
+| 개념 | 설명 | 예시 |
+|------|------|------|
+| **Query** | Component 조합으로 Entity 필터링 | `Query<RefRW<Health>, RefRO<Transform>>()` |
+| **RefRW** | Read-Write 참조 (수정 가능) | `health.ValueRW.Current -= 10` |
+| **RefRO** | Read-Only 참조 (읽기 전용) | `float3 pos = transform.ValueRO.Position` |
+| **WithAll** | 특정 Component 보유 필터 | `.WithAll<PlayerTag>()` |
+| **WithNone** | 특정 Component 미보유 필터 | `.WithNone<Dead>()` |
+| **EntityCommandBuffer** | 구조적 변경 지연 실행 | `ecb.Instantiate()`, `ecb.DestroyEntity()` |
+
+#### 4. EntityCommandBuffer 상세
+
+**왜 필요한가?**
+
+```csharp
+// ❌ 잘못된 예: OnUpdate 중 직접 변경
+public void OnUpdate(ref SystemState state)
+{
+    foreach (var entity in SystemAPI.Query<...>())
+    {
+        state.EntityManager.DestroyEntity(entity);  // ⚠️ 반복 중 구조 변경!
+        // → Archetype 변경으로 순회 중인 배열이 무효화됨
+        // → 크래시 또는 예측 불가능한 동작
+    }
+}
+
+// ✅ 올바른 예: ECB로 지연 실행
+public void OnUpdate(ref SystemState state)
+{
+    var ecb = /* EntityCommandBuffer */;
+
+    foreach (var entity in SystemAPI.Query<...>())
+    {
+        ecb.DestroyEntity(entity);  // ✅ 기록만 함 (즉시 실행 X)
+    }
+    // SystemGroup 끝에 ECB 일괄 실행 → 안전
+}
+```
+
+**ECB 실행 타이밍:**
+
+```
+SimulationSystemGroup (매 프레임)
+│
+├─ BeginSimulationECBSystem  ← ECB 실행 (이전 프레임 명령)
+│
+├─ AutoShootSystem           ← ECB에 기록
+├─ BulletMovementSystem      ← ECB에 기록
+├─ EnemySpawnSystem          ← ECB에 기록
+│
+└─ EndSimulationECBSystem    ← ECB 실행 (이번 프레임 명령)
 ```
 
 ---
 
-## 2. Netcode for Entities 아키텍처
+### Netcode for Entities 구조
 
-### 2.1 서버-클라이언트 구조
+멀티플레이어에서는 **서버가 게임 로직 실행**, **클라이언트는 입력만 전송**합니다.
+
+#### 1. 서버-클라이언트 World 분리
+
+Unity Netcode는 **하나의 프로세스에 여러 World**를 생성합니다:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         서버 (Server World)                  │
-│  - 게임 로직 실행 (적 스폰, 충돌 처리, 데미지 계산)          │
-│  - 권위적 상태 관리                                          │
-│  - Ghost 엔티티 동기화                                       │
-└─────────────────────────────────────────────────────────────┘
-                              ↕ Ghost Sync / RPC
-┌─────────────────────────────────────────────────────────────┐
-│                       클라이언트 (Client World)              │
-│  - 입력 수집 및 전송                                         │
-│  - 예측 시뮬레이션 (Prediction)                              │
-│  - UI 및 이펙트 표시                                         │
-└─────────────────────────────────────────────────────────────┘
+Unity Process (단일 .exe)
+│
+├─ Server World               ← 게임 로직 실행 (권위적)
+│  └─ Entities: 플레이어, 적, 총알 (모든 Entity)
+│
+├─ Client World               ← 입력 전송 + 예측
+│  └─ Entities: 플레이어, 적, 총알 (Ghost로 동기화된 Entity)
+│
+└─ Default World              ← UI, 입력 처리 (비게임 로직)
 ```
 
-### 2.2 서버 전용 System
+**각 World의 역할:**
 
-`WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)` 어트리뷰트로 서버에서만 실행되는 System:
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        서버 World (권위적)                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│  [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]           │
+│                                                                          │
+│  ✅ AutoShootSystem          - 총알 생성 (서버만)                        │
+│     → 클라이언트는 Ghost로 동기화된 총알만 보임                          │
+│                                                                          │
+│  ✅ EnemySpawnSystem         - 적 생성 (서버만)                          │
+│     → NetworkId를 가진 Entity만 생성                                     │
+│                                                                          │
+│  ✅ BulletHitSystem          - 충돌 판정 (서버만)                        │
+│     → 피격 판정은 서버가 결정 (클라 예측 X)                              │
+│     → HitEffectRpc로 클라에 이펙트만 요청                                │
+│                                                                          │
+│  ✅ BuffApplySystem          - 버프 적용 (서버만)                        │
+│     → PlayerBuffs 컴포넌트 수정                                          │
+│     → Ghost 동기화로 클라에 자동 전파                                    │
+│                                                                          │
+│  📤 Ghost 동기화: PlayerHealth, EnemyHealth, LocalTransform 등          │
+│     → 매 Tick(50ms)마다 변경된 값만 전송                                │
+│                                                                          │
+│  📤 RPC 전송: 일회성 이벤트                                              │
+│     → HitEffectRpc: 피격 위치 + 데미지                                   │
+│     → ShowBuffSelectionRpc: 버프 선택 UI 트리거                          │
+└─────────────────────────────────────────────────────────────────────────┘
+                            ⬇ Ghost Snapshot (20Hz)
+                            ⬇ RPC (이벤트 발생 시)
+                            ⬆ PlayerInput (20Hz)
+                            ⬆ BuffSelectedRpc (버프 선택 시)
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      클라이언트 World (예측)                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│  [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]           │
+│                                                                          │
+│  ✅ GatherPlayerInputSystem  - 키보드 입력 수집                          │
+│     → PlayerInput 컴포넌트에 저장                                        │
+│     → 서버로 자동 전송 (IInputComponentData)                            │
+│                                                                          │
+│  ✅ ProcessPlayerInputSystem - 입력 → 이동 (양쪽 실행)                   │
+│     → 클라: 즉시 이동 (예측)                                            │
+│     → 서버: Ghost로 최종 위치 전송                                       │
+│     → 차이 발생 시 클라가 서버 위치로 보정 (Reconciliation)             │
+│                                                                          │
+│  ✅ ClientStarVisualSystem   - 별 시각화 (클라 전용)                     │
+│     → StarSpawnRpc 수신 → GameObject 풀에서 가져와 표시                 │
+│     → 서버는 Entity만 관리, 클라는 비주얼 추가                           │
+│                                                                          │
+│  ✅ HitEffectClientSystem    - 피격 이펙트 재생                          │
+│     → HitEffectRpc 수신 → 파티클 재생                                   │
+│     → 서버는 로직만, 클라는 시각/청각 효과                               │
+│                                                                          │
+│  📥 Ghost 수신: 서버 상태 동기화                                         │
+│     → Prediction: 입력 기반 즉시 예측                                    │
+│     → Reconciliation: 서버 값과 차이 발생 시 보정                        │
+│                                                                          │
+│  📥 RPC 수신: 이벤트 처리                                                │
+│     → 수신 후 ecb.DestroyEntity(rpcEntity) 필수!                        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
-| System | 역할 |
-|--------|------|
-| `PlayerSpawnSystem` | 클라이언트 연결 시 플레이어 스폰 |
-| `PlayerRespawnSystem` | 플레이어 부활 요청 처리 |
-| `PlayerDisconnectCleanupSystem` | 연결 해제 시 정리 |
-| `EnemySpawnSystem` | 적 생성 |
-| `EnemyChaseSystem` | 적 AI |
-| `BulletHitSystem` | 총알 충돌 판정 |
-| `PlayerDamageSystem` | 플레이어 피격 |
-| `BuffSelectionSystem` | 버프 선택 로직 |
-| `BuffApplySystem` | 버프 적용 |
-| `StatCalculationSystem` | 스탯 계산 |
-| `MagnetSystem` | 자석 효과 |
-| `HealthRegenSystem` | 체력 재생 |
-| `StarCollectSystem` | 별 수집 |
-| `GameSessionSystem` | 게임 세션 관리 |
+#### 2. Ghost 동기화 메커니즘
+
+**Ghost란?** 서버 Entity를 클라이언트로 자동 동기화하는 시스템
 
 ```csharp
-// 서버 전용 System 예시
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-public partial struct PlayerSpawnSystem : ISystem
-{
-    public void OnUpdate(ref SystemState state)
-    {
-        // 새로 연결된 클라이언트에 플레이어 Entity 생성
-        foreach (var connectionEntity in newConnectionQuery)
-        {
-            var player = state.EntityManager.Instantiate(prefab);
-            state.EntityManager.SetComponentData(player, new GhostOwner { NetworkId = networkId });
-        }
-    }
-}
-```
+// Components/PlayerHealth.cs
+using Unity.Entities;
+using Unity.NetCode;
 
-### 2.3 클라이언트 전용 System
-
-`WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)` 어트리뷰트로 클라이언트에서만 실행되는 System:
-
-| System | 역할 |
-|--------|------|
-| `GatherPlayerInputSystem` | 키보드/게임패드 입력 수집 |
-| `HitEffectClientSystem` | 피격 이펙트 표시 |
-| `ClientStarVisualSystem` | 별 아이템 비주얼 |
-| `ClientMagnetVisualSystem` | 자석 범위 인디케이터 |
-| `BuffSelectionClientSystem` | 버프 선택 UI 처리 |
-| `ReceiveKillCountRpcSystem` | 킬 카운트 수신 |
-
-```csharp
-// 클라이언트 전용 System 예시
-[UpdateInGroup(typeof(GhostInputSystemGroup))]
-[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-public partial class GatherPlayerInputSystem : SystemBase
-{
-    protected override void OnUpdate()
-    {
-        bool left = Input.GetKey(KeyCode.A);
-        bool right = Input.GetKey(KeyCode.D);
-
-        foreach (var input in SystemAPI.Query<RefRW<PlayerInput>>()
-            .WithAll<GhostOwnerIsLocal>())
-        {
-            if (left) input.ValueRW.Horizontal -= 1;
-            if (right) input.ValueRW.Horizontal += 1;
-        }
-    }
-}
-```
-
-### 2.4 양쪽에서 실행되는 System
-
-| System | 역할 |
-|--------|------|
-| `GoInGameSystem` | 네트워크 연결을 InGame 상태로 전환 |
-| `ProcessPlayerInputSystem` | 입력을 이동으로 변환 (예측 시뮬레이션) |
-
-```csharp
-// 양쪽 실행 System 예시
-[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation)]
-public partial class GoInGameSystem : SystemBase
-{
-    protected override void OnUpdate()
-    {
-        // NetworkId가 설정되면 InGame 상태로 전환
-        foreach (var (id, ent) in SystemAPI.Query<NetworkId>()
-            .WithNone<NetworkStreamInGame>()
-            .WithEntityAccess())
-        {
-            commandBuffer.AddComponent<NetworkStreamInGame>(ent);
-        }
-    }
-}
-```
-
-### 2.5 Ghost 동기화
-
-Ghost 컴포넌트는 서버에서 클라이언트로 자동 동기화됩니다:
-
-```csharp
-// Ghost 동기화 예시
+/// <summary>
+/// [GhostComponent]: 이 컴포넌트는 서버→클라 동기화됨
+/// [GhostField]: 이 필드는 네트워크로 전송됨
+/// </summary>
 [GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
 public struct PlayerHealth : IComponentData
 {
-    [GhostField] public float CurrentHealth;  // 자동 동기화
-    [GhostField] public float MaxHealth;      // 자동 동기화
-}
-
-[GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
-public struct PlayerBuffs : IComponentData
-{
-    [GhostField] public int DamageLevel;      // 버프 레벨 동기화
-    [GhostField] public int SpeedLevel;
-    // ...
+    [GhostField] public float CurrentHealth;  // 매 틱 동기화
+    [GhostField] public float MaxHealth;      // 초기화 시 1회만
 }
 ```
 
----
+**동기화 플로우:**
 
-## 3. RPC (Remote Procedure Call) 시스템
+```
+Tick 0:
+[Server] PlayerHealth { Current: 100 }
+   │
+   ├─ Ghost Snapshot 생성
+   │  - DeltaCompression: 이전 Tick과 차이만 전송
+   │  - Quantization: float → int로 압축 (정밀도 손실 최소화)
+   │
+   ↓ 네트워크 전송 (UDP)
+   │
+[Client] PlayerHealth { Current: 100 } ← 동기화 완료
 
-### 3.1 RPC 개요
+Tick 1:
+[Server] 적 공격 → CurrentHealth = 80
+   │
+   ├─ Ghost Snapshot: CurrentHealth만 전송 (MaxHealth는 변경 없으므로 생략)
+   │
+   ↓
+   │
+[Client] PlayerHealth { Current: 80 } ← UI 업데이트
+```
 
-RPC는 서버와 클라이언트 간 비동기 통신에 사용됩니다.
+**Prediction & Reconciliation:**
 
-| 방향 | 용도 |
-|------|------|
-| Server → Client | 이벤트 알림 (킬, 이펙트, UI 표시) |
-| Client → Server | 요청 (버프 선택, 부활 요청) |
+```
+Client Tick 10: 입력 수집
+  ↓
+Client Tick 10: 즉시 이동 예측 (Position: 5.0 → 5.5)
+  ↓
+[전송] PlayerInput { Horizontal: 1 }
+  ↓
+Server Tick 12: 입력 수신 (RTT 2틱)
+  ↓
+Server Tick 12: 이동 처리 (Position: 5.0 → 5.5)
+  ↓
+[전송] Ghost Snapshot { Position: 5.5 }
+  ↓
+Client Tick 14: 수신 및 검증
+  ↓
+비교: 예측값(5.5) == 서버값(5.5) → ✅ 일치, 그대로 유지
+비교: 예측값(5.6) != 서버값(5.5) → ⚠️ 불일치, 5.5로 보정 (Snap)
+```
 
-### 3.2 RPC 목록
+#### 3. RPC (Remote Procedure Call) 상세
 
-#### Server → Client RPC
+**RPC vs Ghost 비교:**
 
-| RPC | 파일 위치 | 설명 |
-|-----|-----------|------|
-| `HitEffectRpc` | Components/Network/HitEffectRpc.cs | 피격 이펙트 위치, 데미지, 치명타 여부 |
-| `KillCountRpc` | Components/Network/KillCountRpc.cs | 킬 카운트 증가 |
-| `ShowBuffSelectionRpc` | Components/Network/ShowBuffSelectionRpc.cs | 버프 선택 UI 표시 요청 |
-| `BuffAppliedRpc` | Components/Network/BuffAppliedRpc.cs | 버프 적용 알림 |
-| `GamePauseRpc` | Components/Network/GamePauseRpc.cs | 게임 일시정지/재개 |
-| `StarSpawnRpc` | Components/Network/StarSpawnRpc.cs | 별 스폰 알림 |
-| `StarDestroyRpc` | Components/Network/StarDestroyRpc.cs | 별 삭제 알림 |
-| `StarCollectRpc` | Components/Network/StarCollectRpc.cs | 별 수집 이펙트 |
+| 특징 | Ghost | RPC |
+|------|-------|-----|
+| **전송 빈도** | 매 틱(20Hz, 50ms마다) | 이벤트 발생 시 1회 |
+| **용도** | 지속적 상태 (체력, 위치) | 일회성 이벤트 (킬, UI) |
+| **대역폭** | 높음 (DeltaCompression으로 최적화) | 낮음 |
+| **신뢰성** | UDP + 재전송 | UDP (필요 시 재전송) |
+| **예시** | `PlayerHealth`, `LocalTransform` | `HitEffectRpc`, `BuffSelectedRpc` |
 
-#### Client → Server RPC
-
-| RPC | 파일 위치 | 설명 |
-|-----|-----------|------|
-| `BuffSelectedRpc` | Components/Network/BuffSelectedRpc.cs | 버프 선택 결과 |
-| `RespawnRequestRpc` | Components/Network/RespawnRequestRpc.cs | 부활 요청 |
-| `DebugKillRequestRpc` | Components/Network/DebugKillRequestRpc.cs | 디버그 킬 요청 |
-| `DebugAddPointsRpc` | Components/Network/DebugAddPointsRpc.cs | 디버그 포인트 추가 |
-
-### 3.3 RPC 구현 예시
+**RPC 구현 예시:**
 
 ```csharp
-// RPC 정의
-[BurstCompile]
+// Components/Network/HitEffectRpc.cs
+using Unity.Entities;
+using Unity.NetCode;
+using Unity.Mathematics;
+
+/// <summary>
+/// 피격 이펙트 RPC (Server → Client)
+/// </summary>
 public struct HitEffectRpc : IRpcCommand
 {
     public float3 Position;   // 피격 위치
     public float Damage;      // 데미지 양
     public bool IsCritical;   // 치명타 여부
 }
-
-// RPC 전송 (Server → Client)
-var hitEffectRpcEntity = ecb.CreateEntity();
-ecb.AddComponent(hitEffectRpcEntity, new HitEffectRpc
-{
-    Position = enemyPos,
-    Damage = finalDamage,
-    IsCritical = isCritical
-});
-ecb.AddComponent(hitEffectRpcEntity, new SendRpcCommandRequest
-{
-    TargetConnection = connectionEntity  // 특정 클라이언트에게
-});
-
-// RPC 수신 (Client)
-foreach (var (rpc, receiveRpc, entity) in
-    SystemAPI.Query<RefRO<HitEffectRpc>, RefRO<ReceiveRpcCommandRequest>>()
-        .WithEntityAccess())
-{
-    // 이펙트 표시
-    HitEffectPool.Instance?.SpawnHitEffect(rpc.ValueRO.Position, rpc.ValueRO.Damage, rpc.ValueRO.IsCritical);
-    ecb.DestroyEntity(entity);  // RPC 엔티티 정리
-}
 ```
 
-### 3.4 RPC 흐름도
-
-#### 버프 선택 플로우
-```
-[Server]                                    [Client]
-    │                                           │
-    │  ← Star 수집, 포인트 임계값 도달 →        │
-    │                                           │
-    ├──── ShowBuffSelectionRpc ────────────────>│
-    │     (옵션 3개 + 현재 레벨)                │
-    │                                           │
-    ├──── GamePauseRpc (IsPaused=true) ────────>│
-    │                                           │
-    │      (유저가 버프 선택)                   │
-    │                                           │
-    │<─── BuffSelectedRpc ─────────────────────┤
-    │     (선택한 버프 타입)                    │
-    │                                           │
-    ├──── BuffAppliedRpc ──────────────────────>│
-    │     (적용된 버프 알림)                    │
-    │                                           │
-    ├──── GamePauseRpc (IsPaused=false) ───────>│
-    │                                           │
-```
-
-#### 피격 이펙트 플로우
-```
-[Server]                                    [Client]
-    │                                           │
-    │  총알이 적에게 명중                       │
-    │                                           │
-    ├──── HitEffectRpc ────────────────────────>│
-    │     (Position, Damage, IsCritical)        │
-    │                                           │
-    │            (파티클 이펙트 + 데미지 팝업)  │
-    │                                           │
-```
-
----
-
-## 4. 버프 시스템
-
-### 4.1 버프 종류
-
-게임에는 8가지 버프가 있으며, 각 버프는 최대 5레벨까지 성장합니다.
-
-| 버프 | 열거형 | 색상 | 효과 |
-|------|--------|------|------|
-| Damage | `BuffType.Damage` | 빨강 | 데미지 증가 |
-| Speed | `BuffType.Speed` | 하늘색 | 이동 속도 증가 |
-| FireRate | `BuffType.FireRate` | 주황 | 공격 속도 증가 |
-| MissileCount | `BuffType.MissileCount` | 보라 | 미사일 개수 증가 |
-| Magnet | `BuffType.Magnet` | 초록 | 아이템 흡수 범위 |
-| HealthRegen | `BuffType.HealthRegen` | 분홍 | 초당 체력 재생 |
-| MaxHealth | `BuffType.MaxHealth` | 핫핑크 | 최대 체력 증가 |
-| Critical | `BuffType.Critical` | 노랑 | 치명타 확률 |
-
-### 4.2 버프 레벨별 효과
-
-#### Damage (데미지 증가)
-| 레벨 | 보너스 |
-|------|--------|
-| Lv1 | +10% |
-| Lv2 | +20% |
-| Lv3 | +35% |
-| Lv4 | +50% |
-| Lv5 | +75% |
-
-#### Speed (이동 속도)
-| 레벨 | 보너스 |
-|------|--------|
-| Lv1 | +10% |
-| Lv2 | +20% |
-| Lv3 | +30% |
-| Lv4 | +40% |
-| Lv5 | +50% |
-
-#### FireRate (공격 속도)
-| 레벨 | 쿨다운 감소 |
-|------|-------------|
-| Lv1 | -15% |
-| Lv2 | -30% |
-| Lv3 | -45% |
-| Lv4 | -60% |
-| Lv5 | -80% |
-
-#### MissileCount (미사일 개수)
-| 레벨 | 추가 개수 |
-|------|-----------|
-| Lv1 | +1 |
-| Lv2 | +2 |
-| Lv3 | +3 |
-| Lv4 | +4 |
-| Lv5 | +6 |
-
-#### Magnet (자석 범위)
-| 레벨 | 범위 |
-|------|------|
-| Lv1 | 3 |
-| Lv2 | 5 |
-| Lv3 | 7 |
-| Lv4 | 10 |
-| Lv5 | 15 |
-
-#### HealthRegen (체력 재생)
-| 레벨 | 초당 회복 |
-|------|-----------|
-| Lv1 | 1 HP/s |
-| Lv2 | 2 HP/s |
-| Lv3 | 3 HP/s |
-| Lv4 | 5 HP/s |
-| Lv5 | 8 HP/s |
-
-#### MaxHealth (최대 체력)
-| 레벨 | 추가 HP |
-|------|---------|
-| Lv1 | +20 |
-| Lv2 | +40 |
-| Lv3 | +70 |
-| Lv4 | +100 |
-| Lv5 | +150 |
-
-#### Critical (치명타)
-| 레벨 | 확률 | 배율 |
-|------|------|------|
-| Lv1 | 5% | 2.0x |
-| Lv2 | 10% | 2.0x |
-| Lv3 | 15% | 2.5x |
-| Lv4 | 20% | 2.5x |
-| Lv5 | 30% | 3.0x |
-
-### 4.3 버프 선택 트리거
-
-버프 선택은 포인트 임계값에 도달하면 발동됩니다:
-
-| 선택 횟수 | 필요 포인트 |
-|-----------|-------------|
-| 1차 | 10 |
-| 2차 | 15 |
-| 3차 | 20 |
-| 4차 | 30 |
-| 5차 | 40 |
-| 6차+ | +15씩 증가 |
-
-### 4.4 버프 관련 Component
+**RPC 전송 (서버):**
 
 ```csharp
-// 버프 레벨 저장 (네트워크 동기화)
-[GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
-public struct PlayerBuffs : IComponentData
+// Systems/BulletHitSystem.cs (서버 전용)
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+public partial struct BulletHitSystem : ISystem
 {
-    [GhostField] public int DamageLevel;
-    [GhostField] public int SpeedLevel;
-    [GhostField] public int FireRateLevel;
-    [GhostField] public int MissileCountLevel;
-    [GhostField] public int MagnetLevel;
-    [GhostField] public int HealthRegenLevel;
-    [GhostField] public int MaxHealthLevel;
-    [GhostField] public int CriticalLevel;
-
-    public const int MaxLevel = 5;
-}
-
-// 계산된 스탯 수정치
-[GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
-public struct StatModifiers : IComponentData
-{
-    [GhostField] public float DamageMultiplier;      // 1.0 = 100%
-    [GhostField] public float FireRateMultiplier;    // 낮을수록 빠름
-    [GhostField] public int BonusMissileCount;
-    [GhostField] public float SpeedMultiplier;
-    [GhostField] public float BonusMaxHealth;
-    [GhostField] public float HealthRegenPerSecond;
-    [GhostField] public float CriticalChance;
-    [GhostField] public float CriticalMultiplier;
-    [GhostField] public float MagnetRange;
-}
-```
-
-### 4.5 버프 관련 System
-
-| System | 역할 |
-|--------|------|
-| `StatCalculationSystem` | PlayerBuffs → StatModifiers 변환 |
-| `BuffSelectionSystem` | 포인트 임계값 도달 시 버프 선택 트리거 |
-| `BuffApplySystem` | 클라이언트 선택 결과 적용 |
-| `BuffSelectionClientSystem` | 버프 선택 UI 표시/처리 |
-| `HealthRegenSystem` | 체력 재생 효과 적용 |
-| `MagnetSystem` | 자석 효과로 아이템 끌어당김 |
-
----
-
-## 5. 게임 컨텐츠
-
-### 5.1 게임 흐름
-
-1. **로비 (LobbyScene)**
-   - 서버 시작 또는 클라이언트 접속
-   - `NetworkConnectionManager`로 연결 관리
-
-2. **게임 (SampleScene)**
-   - 플레이어 스폰 (`PlayerSpawnSystem`)
-   - 적 스폰 시작 (`EnemySpawnSystem`)
-   - 자동 발사 (`AutoShootSystem`)
-
-3. **게임플레이 루프**
-   - 적 처치 → 별 드롭 (`BulletHitSystem`)
-   - 별 수집 → 포인트 획득 (`StarCollectSystem`)
-   - 포인트 도달 → 버프 선택 (`BuffSelectionSystem`)
-   - 게임 일시정지 중 버프 선택 UI
-   - 버프 적용 후 게임 재개
-
-4. **게임오버**
-   - 플레이어 체력 0 → 사망 (`PlayerDamageSystem`)
-   - 부활 요청 가능 (`RespawnRequestRpc`)
-
-### 5.2 전투 시스템
-
-#### 자동 발사
-- 가장 가까운 적을 자동 타겟팅
-- 좌우 교대 발사 (좌우 날개)
-- 다중 미사일 부채꼴 패턴
-
-```csharp
-// 미사일 부채꼴 발사 로직
-for (int i = 0; i < missileCount; i++)
-{
-    float spreadAngle = 30f;  // 총 펼침 각도
-    float angleStep = spreadAngle / (missileCount - 1);
-    float currentAngle = -spreadAngle / 2f + angleStep * i;
-    quaternion rotation = quaternion.AxisAngle(math.up(), math.radians(currentAngle));
-    shootDirection = math.mul(rotation, playerForward);
-}
-```
-
-#### 미사일 유도
-- `MissileTarget` 컴포넌트로 타겟 추적
-- `MissileTurnSpeed`로 선회 속도 제어
-
-#### 적 AI
-- 가장 가까운 플레이어 추적
-- Enemy 간 분산 (Separation) 알고리즘
-- 충돌 회피 반경 5.0 유닛
-
-### 5.3 아이템 시스템
-
-#### 별 (Star)
-- 적 처치 시 드롭
-- 수집 시 포인트 획득
-- 자석 버프로 자동 수집 범위 증가
-
-### 5.4 UI 시스템
-
-| UI | 파일 위치 | 설명 |
-|----|-----------|------|
-| `PlayerStatsUI` | UI/PlayerStatsUI.cs | 체력바, 포인트 표시 |
-| `BuffSelectionUI` | UI/BuffSelectionUI.cs | 버프 선택 화면 |
-| `BuffIconsUI` | UI/BuffIconsUI.cs | 획득한 버프 아이콘 |
-| `BuffOptionCard` | UI/BuffOptionCard.cs | 버프 선택 카드 |
-| `DamagePopupManager` | UI/DamagePopupManager.cs | 데미지 숫자 표시 |
-| `MagnetRangeIndicator` | UI/MagnetRangeIndicator.cs | 자석 범위 시각화 |
-| `FPSDisplay` | UI/FPSDisplay.cs | FPS 표시 |
-| `LobbyUI` | UI/LobbyUI.cs | 로비 UI |
-| `UIManager` | UI/UIManager.cs | UI 총괄 관리 |
-
----
-
-## 6. 네트워크 부트스트랩
-
-### 6.1 SimpleNetworkBootstrap
-
-```csharp
-[UnityEngine.Scripting.Preserve]
-public class SimpleNetworkBootstrap : ClientServerBootstrap
-{
-    public override bool Initialize(string defaultWorldName)
+    public void OnUpdate(ref SystemState state)
     {
-        Application.runInBackground = true;
-        Application.targetFrameRate = 60;
+        var ecb = /* EntityCommandBuffer */;
 
-        var activeScene = SceneManager.GetActiveScene().name;
-
-        // 로비 씬: 자동 연결 비활성화
-        if (activeScene == "LobbyScene")
+        // 총알-적 충돌 처리
+        foreach (var (damage, transform, bullet) in /* 충돌 검출 */)
         {
-            AutoConnectPort = 0;
-            CreateLocalWorld(defaultWorldName);
-            return true;
+            // 1. 적 체력 감소 (서버 로직)
+            enemy.Health -= damage;
+
+            // 2. RPC Entity 생성
+            var rpcEntity = ecb.CreateEntity();
+            ecb.AddComponent(rpcEntity, new HitEffectRpc
+            {
+                Position = enemyPos,
+                Damage = finalDamage,
+                IsCritical = isCritical
+            });
+
+            // 3. 전송 대상 지정 (특정 클라 또는 전체)
+            ecb.AddComponent(rpcEntity, new SendRpcCommandRequest
+            {
+                TargetConnection = Entity.Null  // Null = 모든 클라이언트
+            });
         }
-
-        // 게임 씬: 자동 연결 (테스트용)
-        AutoConnectPort = 7979;
-        CreateDefaultClientServerWorlds();
-
-        // Tick Rate 설정
-        SetTickRate(world);  // 20Hz
-
-        return true;
     }
 }
 ```
 
-### 6.2 틱 레이트 설정
+**RPC 수신 (클라이언트):**
 
-| 설정 | 값 |
-|------|-----|
-| SimulationTickRate | 20 Hz |
-| NetworkTickRate | 20 Hz |
-| MaxSimulationStepsPerFrame | 8 |
+```csharp
+// Systems/Network/HitEffectClientSystem.cs (클라 전용)
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+public partial class HitEffectClientSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var ecb = EntityManager.CreateEntityCommandBuffer();
+
+        // RPC Entity 순회 (ReceiveRpcCommandRequest 자동 부여됨)
+        Entities
+            .WithAll<ReceiveRpcCommandRequest>()
+            .ForEach((Entity entity, in HitEffectRpc rpc) =>
+            {
+                // 1. 이펙트 재생 (MonoBehaviour 풀 사용)
+                HitEffectPool.Instance?.SpawnHitEffect(
+                    rpc.Position,
+                    rpc.Damage,
+                    rpc.IsCritical
+                );
+
+                // 2. RPC Entity 삭제 (필수!)
+                ecb.DestroyEntity(entity);
+            }).Run();
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
+}
+```
+
+**⚠️ RPC 주의사항:**
+1. **RPC Entity는 수신 후 반드시 삭제** (`ecb.DestroyEntity`)
+2. **NetworkId 체크 필수** (서버 연결 전 RPC 수신 방지)
+   ```csharp
+   state.RequireForUpdate<NetworkId>();
+   ```
+
+#### 4. 실제 게임 플로우: 버프 선택 시퀀스
+
+```
+프레임 1000:
+[Server] StarCollectSystem
+  │
+  ├─ 플레이어가 별 수집 감지 (Physics Trigger)
+  ├─ PlayerStarPoints.Value += 10
+  ├─ if (points >= 10) → 버프 선택 트리거
+  │
+  ├─ BuffSelectionSystem 실행
+  │  ├─ 랜덤으로 3개 버프 옵션 선택
+  │  └─ BuffSelectionState 컴포넌트 추가
+  │
+  ├─ [RPC 전송] ShowBuffSelectionRpc
+  │  └─ Options: [Damage Lv2, Speed Lv1, Magnet Lv3]
+  │
+  └─ [RPC 전송] GamePauseRpc { IsPaused: true }
+     └─ 서버 시간 정지 (Time.timeScale = 0)
+
+프레임 1001~1050: (게임 일시정지)
+[Client] BuffSelectionClientSystem
+  │
+  ├─ ShowBuffSelectionRpc 수신
+  ├─ BuffSelectionUI.Show(options)
+  │  └─ 유저에게 3개 카드 표시
+  │
+  └─ 유저 입력 대기...
+
+프레임 1051: (유저가 "Damage Lv2" 선택)
+[Client] BuffSelectionClientSystem
+  │
+  ├─ 유저 클릭 감지
+  ├─ [RPC 전송] BuffSelectedRpc { BuffType: Damage }
+  │
+  └─ UI 닫기 (BuffSelectionUI.Hide)
+
+프레임 1053:
+[Server] BuffApplySystem
+  │
+  ├─ BuffSelectedRpc 수신
+  ├─ PlayerBuffs.DamageLevel += 1  (Lv1 → Lv2)
+  │  → Ghost 동기화로 클라에 자동 전파
+  │
+  ├─ StatCalculationSystem 실행
+  │  └─ StatModifiers.DamageMultiplier = 1.2 (Lv2: +20%)
+  │
+  ├─ [RPC 전송] BuffAppliedRpc { Type: Damage, Level: 2 }
+  │
+  └─ [RPC 전송] GamePauseRpc { IsPaused: false }
+     └─ 게임 재개
+
+프레임 1054:
+[Client] BuffSelectionClientSystem
+  │
+  ├─ BuffAppliedRpc 수신
+  ├─ BuffIconsUI.UpdateIcon(Damage, Lv2)
+  │  └─ UI에 버프 아이콘 표시
+  │
+  └─ GamePauseRpc 수신 → 게임 재개
+```
 
 ---
 
-## 7. 디렉토리 구조
+## 📁 프로젝트 구조
 
 ```
 Assets/Scripts/
-├── Authoring/                    # Baker 클래스
-│   ├── Network/                  # 네트워크 관련 Authoring
-│   ├── PlayerAuthoring.cs
-│   ├── EnemyAuthoring.cs
-│   ├── BulletAuthoring.cs
-│   └── ...
-├── Buffs/
-│   └── Core/                     # 버프 열거형
-│       ├── BuffType.cs
-│       └── StatType.cs
-├── Camera/
-│   └── PlayerFollowCamera.cs
-├── Components/                   # ECS 컴포넌트
-│   ├── Buffs/                    # 버프 관련 컴포넌트
-│   ├── Items/                    # 아이템 관련 컴포넌트
-│   ├── Network/                  # RPC 정의
-│   ├── PlayerTag.cs
-│   ├── PlayerHealth.cs
-│   └── ...
-├── Editor/                       # 에디터 도구
-├── Effects/                      # 이펙트 풀
-│   ├── HitEffectPool.cs
-│   ├── StarCollectEffectPool.cs
-│   └── BuffEffectPool.cs
-├── Network/                      # 네트워크 관리
-│   ├── NetworkConnectionManager.cs
-│   ├── SimpleNetworkBootstrap.cs
-│   └── ConnectionDebugSystem.cs
-├── Sound/
-│   └── GameSoundManager.cs
-├── Systems/                      # ECS 시스템
-│   ├── Buffs/                    # 버프 시스템
-│   ├── Items/                    # 아이템 시스템
-│   ├── Network/                  # 네트워크 시스템
-│   ├── UI/                       # UI 시스템
-│   ├── AutoShootSystem.cs
-│   ├── EnemySpawnSystem.cs
-│   ├── EnemyChaseSystem.cs
-│   └── ...
-└── UI/                           # UI 스크립트
-    ├── BuffSelectionUI.cs
-    ├── PlayerStatsUI.cs
-    └── ...
+├── Authoring/                          # GameObject → Entity 변환 (Baker)
+│   ├── PlayerAuthoring.cs              # 플레이어 Entity 생성
+│   ├── EnemyAuthoring.cs               # 적 Entity 생성
+│   └── BulletAuthoring.cs              # 총알 Entity 생성
+│
+├── Components/                         # 데이터만 포함 (IComponentData)
+│   ├── PlayerTag.cs                    # 플레이어 식별 마커
+│   ├── PlayerHealth.cs                 # [GhostField] 체력 동기화
+│   ├── AutoShootConfig.cs              # 발사 설정
+│   ├── Buffs/
+│   │   ├── PlayerBuffs.cs              # [GhostField] 버프 레벨
+│   │   └── StatModifiers.cs            # [GhostField] 계산된 스탯
+│   └── Network/                        # RPC 정의
+│       ├── HitEffectRpc.cs             # 피격 이펙트 RPC
+│       └── BuffSelectedRpc.cs          # 버프 선택 RPC
+│
+├── Systems/                            # 로직 처리 (ISystem / SystemBase)
+│   ├── AutoShootSystem.cs              # [Server] 자동 발사
+│   ├── EnemySpawnSystem.cs             # [Server] 적 생성
+│   ├── EnemyChaseSystem.cs             # [Server] 적 AI
+│   ├── BulletHitSystem.cs              # [Server] 충돌 판정
+│   ├── Buffs/
+│   │   ├── BuffSelectionSystem.cs      # [Server] 버프 트리거
+│   │   ├── BuffApplySystem.cs          # [Server] 버프 적용
+│   │   └── StatCalculationSystem.cs    # [Server] 스탯 계산
+│   └── Network/
+│       ├── GatherPlayerInputSystem.cs  # [Client] 입력 수집
+│       ├── ProcessPlayerInputSystem.cs # [Both] 입력 → 이동
+│       └── HitEffectClientSystem.cs    # [Client] 이펙트 재생
+│
+├── Network/
+│   └── SimpleNetworkBootstrap.cs       # 네트워크 초기화
+│
+└── UI/                                 # MonoBehaviour UI
+    ├── BuffSelectionUI.cs              # 버프 선택 화면
+    └── PlayerStatsUI.cs                # 체력, 포인트 표시
 ```
 
 ---
 
-## 8. 주의사항 및 Best Practices
+## 👨‍💻 개발 가이드
 
-### 8.1 ECS 주의사항
+### 필수 개발 규칙
 
-1. **RefRW 직접 수정**
+#### 1. TransformUsageFlags 올바른 사용 ⚠️
+
+Baker에서 Entity 생성 시 Transform 동작 지정:
+
 ```csharp
-// ❌ 잘못됨: 복사본 생성
-var config = shootConfig.ValueRW;
-config.Timer += deltaTime;  // 원본 변경 안 됨!
-
-// ✅ 올바름: 직접 접근
-shootConfig.ValueRW.Timer += deltaTime;
-```
-
-2. **TransformUsageFlags 설정**
-```csharp
-// ❌ 잘못됨: 렌더링 안 됨
+// ❌ 잘못: 움직이지만 렌더링 안 됨!
 var entity = GetEntity(TransformUsageFlags.Dynamic);
 
-// ✅ 올바름: 렌더링 + 이동
+// ✅ 올바름: 움직이면서 보임
 var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
 ```
 
-### 8.2 네트워크 주의사항
+**플래그 종류:**
+- `None`: 정적 오브젝트 (움직임 X, Transform 읽기 전용)
+- `Dynamic`: 런타임에 Transform 변경 가능
+- `Renderable`: 화면에 렌더링
+- `WorldSpace`: World 좌표계 사용 (Parent 무시)
 
-1. **서버 권위적 상태**
-   - 게임 로직은 서버에서만 실행
-   - 클라이언트는 입력 전송 + 비주얼만 처리
+#### 2. RefRW 컴포넌트 직접 수정 ⚠️
 
-2. **Ghost 동기화**
-   - `[GhostField]`로 자동 동기화되는 필드 지정
-   - 예측이 필요한 컴포넌트는 `GhostPrefabType.AllPredicted`
-
-3. **RPC 사용**
-   - 즉시 반응이 필요한 이벤트에 사용
-   - 대역폭 고려하여 최소한의 데이터만 전송
-
----
-
-## 9. ECS 핵심 개념 (Quick Reference)
-
-### 9.1 SystemGroup 실행 순서
-
-```
-InitializationSystemGroup → SimulationSystemGroup → PresentationSystemGroup
-```
-
-| SystemGroup | 역할 | 예시 |
-|-------------|------|------|
-| **Initialization** | 입력 수집, 네트워크 메시지 수신 | `GatherPlayerInputSystem` |
-| **Simulation** | 게임 로직, 물리, AI | `EnemyChaseSystem`, `BulletHitSystem` |
-| **Presentation** | 렌더링 준비, VFX | 카메라, 애니메이션 |
-
-### 9.2 SystemBase vs ISystem
-
-| 특징 | SystemBase (Class) | ISystem (Struct) |
-|------|-------------------|------------------|
-| **Burst 컴파일** | ❌ 불가능 | ✅ 가능 |
-| **Unity API** | ✅ 가능 (`Input.GetKey`) | ❌ 불가능 |
-| **성능** | 보통 | 높음 (권장) |
-| **사용 시기** | Unity API 필요 시 | 순수 계산 로직 |
-
-### 9.3 EntityCommandBuffer (ECB)
-
-OnUpdate 중 Entity 구조 변경 시 반드시 ECB 사용:
+구조체는 값 타입이므로 복사 방지:
 
 ```csharp
-// ❌ 에러 발생
-state.EntityManager.DestroyEntity(entity);
+// ❌ 잘못: 복사본만 수정됨 (원본 변경 안 됨!)
+var config = shootConfig.ValueRW;
+config.Timer += deltaTime;
 
-// ✅ ECB 사용
-var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                  .CreateCommandBuffer(state.WorldUnmanaged);
-ecb.DestroyEntity(entity);
-```
-
-### 9.4 IJobEntity의 Execute
-
-Execute 함수는 Unity ECS가 **자동으로** 조건에 맞는 모든 Entity에 대해 호출합니다:
-
-```csharp
-[BurstCompile]
-public partial struct EnemyChaseJob : IJobEntity
+// ✅ 올바름: 체인 방식으로 직접 접근
+shootConfig.ValueRW.Timer += deltaTime;
+if (shootConfig.ValueRW.Timer >= shootConfig.ValueRW.Interval)
 {
-    public float3 PlayerPosition;
-
-    // Unity ECS가 LocalTransform + EnemySpeed를 가진 모든 Entity에 대해 호출
-    void Execute(ref LocalTransform transform, in EnemySpeed speed)
-    {
-        float3 direction = math.normalizesafe(PlayerPosition - transform.Position);
-        transform.Position += direction * speed.Value;
-    }
-}
-
-// 사용
-new EnemyChaseJob { PlayerPosition = pos }.ScheduleParallel();
-```
-
----
-
-## 10. Netcode 핵심 개념 (Quick Reference)
-
-### 10.1 네트워크 연결 흐름
-
-```
-[Client 연결]
-    ↓
-NetworkId 컴포넌트 생성
-    ↓
-GoInGameSystem 실행
-    ↓
-NetworkStreamInGame 태그 추가 ← 핵심!
-    ↓
-Ghost 스냅샷 동기화 시작
-    ↓
-PlayerSpawnSystem 실행 (Server)
-    ↓
-플레이어 Entity 생성 및 동기화
-```
-
-### 10.2 IInputComponentData
-
-네트워크 입력 전용 인터페이스:
-
-```csharp
-public struct PlayerInput : IInputComponentData
-{
-    public int Horizontal;  // -1, 0, 1 (대역폭 절약)
-    public int Vertical;
+    shootConfig.ValueRW.Timer = 0f;
 }
 ```
 
-**핵심 규칙:**
-1. 매 프레임 `input.ValueRW = default;` 초기화 필수
-2. `GhostOwnerIsLocal`로 내 플레이어만 필터링
-3. 입력 수집: `GhostInputSystemGroup`
-4. 입력 처리: `PredictedSimulationSystemGroup`
+#### 3. SystemGroup 실행 순서
 
-### 10.3 RPC vs Ghost
+Unity ECS는 매 프레임마다 정해진 순서로 SystemGroup 실행:
 
-| | RPC | Ghost 컴포넌트 |
-|---|---|---|
-| **용도** | 일회성 이벤트 | 지속적 상태 |
-| **전송** | 이벤트 발생 시 1회 | 매 프레임 자동 |
-| **예시** | 채팅, 킬 알림, 아이템 획득 | HP, Position, Score |
-| **대역폭** | 낮음 (필요 시만) | 높음 |
-
-**RPC 사용 시 필수:**
-```csharp
-// RPC Entity는 처리 후 반드시 삭제!
-ecb.DestroyEntity(entity);
+```
+Frame N:
+│
+├─ InitializationSystemGroup
+│  ├─ BeginInitializationECBSystem
+│  ├─ CopyTransformFromGameObject (Hybrid)
+│  └─ EndInitializationECBSystem
+│
+├─ SimulationSystemGroup
+│  ├─ BeginSimulationECBSystem
+│  ├─ FixedStepSimulationSystemGroup (Physics)
+│  ├─ PlayerMovementSystem       ← [UpdateBefore/After로 순서 지정]
+│  ├─ BulletMovementSystem
+│  ├─ EnemyChaseSystem
+│  └─ EndSimulationECBSystem
+│
+└─ PresentationSystemGroup
+   ├─ BeginPresentationECBSystem
+   ├─ UpdateCameraSystem
+   ├─ CopyTransformToGameObject (Hybrid)
+   └─ EndPresentationECBSystem
 ```
 
-### 10.4 플레이어 스폰 7단계
+**System 순서 지정:**
 
 ```csharp
-// 1. 스폰 위치 설정
-localTransform.Position.x += networkId.Value * 2;
-
-// 2. GhostOwner 설정 (네트워크 소유권)
-new GhostOwner { NetworkId = networkId.Value }
-
-// 3. CommandTarget 설정 (입력 라우팅)
-new CommandTarget { targetEntity = player }
-
-// 4. LinkedEntityGroup에 추가 (자동 정리)
-LinkedEntityGroup에 player 추가
-
-// 5. ConnectionOwner 추가 (역참조)
-new ConnectionOwner { Entity = connectionEntity }
-
-// 6. PlayerSpawned 마커 (중복 방지)
-AddComponent<PlayerSpawned>(connectionEntity)
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(PlayerMovementSystem))]  // PlayerMovementSystem 이후 실행
+[UpdateBefore(typeof(BulletHitSystem))]      // BulletHitSystem 이전 실행
+public partial struct BulletMovementSystem : ISystem { }
 ```
 
-### 10.5 RequireForUpdate vs WithAll
+#### 4. 언어 설정 🇰🇷
+
+- ✅ 코드 설명, 커밋 메시지 → **한국어**
+- 📝 변수명, 함수명 → 영어
+
+#### 5. API 사용 시 검증 필수
 
 ```csharp
-public void OnCreate(ref SystemState state)
-{
-    // RequireForUpdate: "최소 1개 있어야 시스템 실행"
-    state.RequireForUpdate<NetworkStreamInGame>();
+// ❌ 금지: 추측해서 사용
+NetDebug.SuppressTickBatchingWarning();  // 존재하지 않음
 
-    // Query의 WithAll: "이 컴포넌트를 가진 Entity만 필터링"
-    m_Query = SystemAPI.QueryBuilder()
-        .WithAll<NetworkId>()
-        .WithNone<PlayerSpawned>()
-        .Build();
-}
+// ✅ 필수: 공식 문서 확인 후 사용
+Application.runInBackground = true;
 ```
+
+> 📚 **상세 규칙**: [CLAUDE.md](CLAUDE.md)
 
 ---
 
-## 11. 디버깅 체크리스트
+## 🎯 버프 시스템
 
-### 네트워크 동기화 안 될 때
+8종류 버프, 각 5레벨:
 
-1. [ ] GoInGameSystem 존재 확인
-2. [ ] EnableGoInGameAuthoring 씬에 배치됨
-3. [ ] NetworkStreamInGame 태그 확인 (Entity Hierarchy)
-4. [ ] GhostCollection의 Num Loaded Prefabs > 0
-5. [ ] Network Debugger에서 Snapshot Ack 확인
+| 버프 | 효과 | Lv5 |
+|-----|------|-----|
+| **Damage** | 데미지 증가 | +75% |
+| **Speed** | 이동 속도 | +50% |
+| **FireRate** | 공격 속도 | -80% 쿨다운 |
+| **MissileCount** | 미사일 개수 | +6개 |
+| **Magnet** | 자석 범위 | 15 유닛 |
+| **HealthRegen** | 체력 재생 | 8 HP/s |
+| **MaxHealth** | 최대 체력 | +150 HP |
+| **Critical** | 치명타 | 30% 확률, 3.0배 |
 
-### 플레이어 스폰 안 될 때
-
-1. [ ] Spawner 컴포넌트 존재 확인
-2. [ ] SpawnerAuthoring에 Player Prefab 할당됨
-3. [ ] Player.prefab에 GhostAuthoringComponent 있음
-4. [ ] PlayerSpawnSystem 로그 확인
-
-### RPC 전송/수신 안 될 때
-
-1. [ ] `RequireForUpdate<NetworkId>()` 추가했는지
-2. [ ] `SendRpcCommandRequest` 컴포넌트 추가했는지
-3. [ ] 수신 후 `ecb.DestroyEntity(entity)` 했는지
-4. [ ] WorldSystemFilter 확인 (Server/Client)
+**버프 선택 트리거**: 10 → 15 → 20 → 30 → 40 → +15씩
 
 ---
 
-## 12. 참고 자료
+## ❓ 트러블슈팅
+
+### 자주 발생하는 문제
+
+#### 1. Ghost 동기화 안 됨
+- [ ] `GoInGameSystem` 존재 확인
+- [ ] `NetworkStreamInGame` 태그 확인
+- [ ] GhostCollection의 Num Loaded Prefabs > 0
+
+#### 2. Entity가 렌더링 안 됨
+```csharp
+// Baker에서 플래그 확인
+var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
+```
+
+#### 3. 컴포넌트 수정이 적용 안 됨
+```csharp
+// 직접 수정 (로컬 변수 복사 금지)
+shootConfig.ValueRW.Timer += deltaTime;
+```
+
+#### 4. RPC 전송/수신 안 됨
+- [ ] `RequireForUpdate<NetworkId>()` 추가
+- [ ] `SendRpcCommandRequest` 컴포넌트 추가
+- [ ] 수신 후 `ecb.DestroyEntity(entity)` 필수
+
+---
+
+## 📚 상세 문서
+
+| 문서 | 설명 |
+|------|------|
+| [knowledge_ecs.md](Document/knowledge/knowledge_ecs.md) | Unity ECS 상세 학습 노트 |
+| [knowledge_netcode.md](Document/knowledge/knowledge_netcode.md) | Netcode for Entities 학습 노트 |
+| [spec.md](Document/spec.md) | 프로젝트 요구사항 명세 |
+| [CLAUDE.md](CLAUDE.md) | Claude Code 개발 가이드라인 |
+
+---
+
+## 🔗 참고 자료
 
 - [Unity Entities 공식 문서](https://docs.unity3d.com/Packages/com.unity.entities@latest)
 - [Netcode for Entities 공식 문서](https://docs.unity3d.com/Packages/com.unity.netcode@latest)
 - [NetcodeSamples 저장소](https://github.com/Unity-Technologies/EntityComponentSystemSamples)
 
-### 프로젝트 내 문서
-- `Document/knowledge/knowledge_ecs.md` - ECS 상세 학습 노트
-- `Document/knowledge/knowledge_netcode.md` - Netcode 상세 학습 노트
-- `Document/spec.md` - 프로젝트 요구사항 명세
-- `CLAUDE.md` - Claude Code 가이드라인
+---
+
+## 📝 라이선스
+
+개인 학습 및 포트폴리오 용도로 개발되었습니다.
+
+**사용된 에셋**: Polygon SciFi Space, Polygon Arsenal, Cartoon FX Remaster
+
+---
+
+<div align="center">
+
+**Made with ❤️ using Unity DOTS**
+
+[⬆ 맨 위로](#projectc---unity-dots-멀티플레이어-우주-슈팅-게임)
+
+</div>
