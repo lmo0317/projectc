@@ -776,8 +776,194 @@ var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.Dyna
 
 ---
 
-## 9. 참고 자료
+## 9. ECS 핵심 개념 (Quick Reference)
+
+### 9.1 SystemGroup 실행 순서
+
+```
+InitializationSystemGroup → SimulationSystemGroup → PresentationSystemGroup
+```
+
+| SystemGroup | 역할 | 예시 |
+|-------------|------|------|
+| **Initialization** | 입력 수집, 네트워크 메시지 수신 | `GatherPlayerInputSystem` |
+| **Simulation** | 게임 로직, 물리, AI | `EnemyChaseSystem`, `BulletHitSystem` |
+| **Presentation** | 렌더링 준비, VFX | 카메라, 애니메이션 |
+
+### 9.2 SystemBase vs ISystem
+
+| 특징 | SystemBase (Class) | ISystem (Struct) |
+|------|-------------------|------------------|
+| **Burst 컴파일** | ❌ 불가능 | ✅ 가능 |
+| **Unity API** | ✅ 가능 (`Input.GetKey`) | ❌ 불가능 |
+| **성능** | 보통 | 높음 (권장) |
+| **사용 시기** | Unity API 필요 시 | 순수 계산 로직 |
+
+### 9.3 EntityCommandBuffer (ECB)
+
+OnUpdate 중 Entity 구조 변경 시 반드시 ECB 사용:
+
+```csharp
+// ❌ 에러 발생
+state.EntityManager.DestroyEntity(entity);
+
+// ✅ ECB 사용
+var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                  .CreateCommandBuffer(state.WorldUnmanaged);
+ecb.DestroyEntity(entity);
+```
+
+### 9.4 IJobEntity의 Execute
+
+Execute 함수는 Unity ECS가 **자동으로** 조건에 맞는 모든 Entity에 대해 호출합니다:
+
+```csharp
+[BurstCompile]
+public partial struct EnemyChaseJob : IJobEntity
+{
+    public float3 PlayerPosition;
+
+    // Unity ECS가 LocalTransform + EnemySpeed를 가진 모든 Entity에 대해 호출
+    void Execute(ref LocalTransform transform, in EnemySpeed speed)
+    {
+        float3 direction = math.normalizesafe(PlayerPosition - transform.Position);
+        transform.Position += direction * speed.Value;
+    }
+}
+
+// 사용
+new EnemyChaseJob { PlayerPosition = pos }.ScheduleParallel();
+```
+
+---
+
+## 10. Netcode 핵심 개념 (Quick Reference)
+
+### 10.1 네트워크 연결 흐름
+
+```
+[Client 연결]
+    ↓
+NetworkId 컴포넌트 생성
+    ↓
+GoInGameSystem 실행
+    ↓
+NetworkStreamInGame 태그 추가 ← 핵심!
+    ↓
+Ghost 스냅샷 동기화 시작
+    ↓
+PlayerSpawnSystem 실행 (Server)
+    ↓
+플레이어 Entity 생성 및 동기화
+```
+
+### 10.2 IInputComponentData
+
+네트워크 입력 전용 인터페이스:
+
+```csharp
+public struct PlayerInput : IInputComponentData
+{
+    public int Horizontal;  // -1, 0, 1 (대역폭 절약)
+    public int Vertical;
+}
+```
+
+**핵심 규칙:**
+1. 매 프레임 `input.ValueRW = default;` 초기화 필수
+2. `GhostOwnerIsLocal`로 내 플레이어만 필터링
+3. 입력 수집: `GhostInputSystemGroup`
+4. 입력 처리: `PredictedSimulationSystemGroup`
+
+### 10.3 RPC vs Ghost
+
+| | RPC | Ghost 컴포넌트 |
+|---|---|---|
+| **용도** | 일회성 이벤트 | 지속적 상태 |
+| **전송** | 이벤트 발생 시 1회 | 매 프레임 자동 |
+| **예시** | 채팅, 킬 알림, 아이템 획득 | HP, Position, Score |
+| **대역폭** | 낮음 (필요 시만) | 높음 |
+
+**RPC 사용 시 필수:**
+```csharp
+// RPC Entity는 처리 후 반드시 삭제!
+ecb.DestroyEntity(entity);
+```
+
+### 10.4 플레이어 스폰 7단계
+
+```csharp
+// 1. 스폰 위치 설정
+localTransform.Position.x += networkId.Value * 2;
+
+// 2. GhostOwner 설정 (네트워크 소유권)
+new GhostOwner { NetworkId = networkId.Value }
+
+// 3. CommandTarget 설정 (입력 라우팅)
+new CommandTarget { targetEntity = player }
+
+// 4. LinkedEntityGroup에 추가 (자동 정리)
+LinkedEntityGroup에 player 추가
+
+// 5. ConnectionOwner 추가 (역참조)
+new ConnectionOwner { Entity = connectionEntity }
+
+// 6. PlayerSpawned 마커 (중복 방지)
+AddComponent<PlayerSpawned>(connectionEntity)
+```
+
+### 10.5 RequireForUpdate vs WithAll
+
+```csharp
+public void OnCreate(ref SystemState state)
+{
+    // RequireForUpdate: "최소 1개 있어야 시스템 실행"
+    state.RequireForUpdate<NetworkStreamInGame>();
+
+    // Query의 WithAll: "이 컴포넌트를 가진 Entity만 필터링"
+    m_Query = SystemAPI.QueryBuilder()
+        .WithAll<NetworkId>()
+        .WithNone<PlayerSpawned>()
+        .Build();
+}
+```
+
+---
+
+## 11. 디버깅 체크리스트
+
+### 네트워크 동기화 안 될 때
+
+1. [ ] GoInGameSystem 존재 확인
+2. [ ] EnableGoInGameAuthoring 씬에 배치됨
+3. [ ] NetworkStreamInGame 태그 확인 (Entity Hierarchy)
+4. [ ] GhostCollection의 Num Loaded Prefabs > 0
+5. [ ] Network Debugger에서 Snapshot Ack 확인
+
+### 플레이어 스폰 안 될 때
+
+1. [ ] Spawner 컴포넌트 존재 확인
+2. [ ] SpawnerAuthoring에 Player Prefab 할당됨
+3. [ ] Player.prefab에 GhostAuthoringComponent 있음
+4. [ ] PlayerSpawnSystem 로그 확인
+
+### RPC 전송/수신 안 될 때
+
+1. [ ] `RequireForUpdate<NetworkId>()` 추가했는지
+2. [ ] `SendRpcCommandRequest` 컴포넌트 추가했는지
+3. [ ] 수신 후 `ecb.DestroyEntity(entity)` 했는지
+4. [ ] WorldSystemFilter 확인 (Server/Client)
+
+---
+
+## 12. 참고 자료
 
 - [Unity Entities 공식 문서](https://docs.unity3d.com/Packages/com.unity.entities@latest)
 - [Netcode for Entities 공식 문서](https://docs.unity3d.com/Packages/com.unity.netcode@latest)
 - [NetcodeSamples 저장소](https://github.com/Unity-Technologies/EntityComponentSystemSamples)
+
+### 프로젝트 내 문서
+- `Document/knowledge/knowledge_ecs.md` - ECS 상세 학습 노트
+- `Document/knowledge/knowledge_netcode.md` - Netcode 상세 학습 노트
+- `Document/spec.md` - 프로젝트 요구사항 명세
+- `CLAUDE.md` - Claude Code 가이드라인
