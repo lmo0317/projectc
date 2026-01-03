@@ -93,15 +93,15 @@ Unity DOTS는 **데이터 지향 설계**로 CPU 캐시 효율성을 극대화�
 **전통적인 OOP vs ECS:**
 
 ```mermaid
-graph LR
-    subgraph OOP["❌ OOP - GameObject"]
-        A["PlayerObject<br/>• health<br/>• position<br/>• Update()<br/>• TakeDamage()<br/>• Move()"]
+flowchart LR
+    subgraph OOP["OOP - GameObject"]
+        A["PlayerObject<br/>health<br/>position<br/>Update<br/>TakeDamage<br/>Move"]
     end
 
-    subgraph ECS["✅ ECS - Data-Oriented"]
-        B["Entity<br/>(ID만 존재)<br/>Index: 42<br/>Version: 1"]
-        C["Components<br/>(데이터만)<br/>• PlayerHealth: 100<br/>• LocalTransform<br/>• MovementSpeed"]
-        D["Systems<br/>(로직만)<br/>• PlayerMovementSystem<br/>• PlayerDamageSystem"]
+    subgraph ECS["ECS - Data-Oriented"]
+        B["Entity<br/>ID만 존재<br/>Index 42<br/>Version 1"]
+        C["Components<br/>데이터만<br/>PlayerHealth 100<br/>LocalTransform<br/>MovementSpeed"]
+        D["Systems<br/>로직만<br/>PlayerMovementSystem<br/>PlayerDamageSystem"]
         B -->|Has| C
         C -->|Processed by| D
     end
@@ -121,20 +121,17 @@ graph LR
 #### 2. Entity - Component - System 연결 구조
 
 ```mermaid
-graph TB
-    A["Unity Editor (Authoring)<br/>━━━━━━━━━━━━━━━━━━━━<br/>GameObject: PlayerAuthoring<br/>Inspector: FireRate=0.25, BulletPrefab=..."]
+flowchart TB
+    A["Unity Editor<br/>GameObject: PlayerAuthoring<br/>Inspector: FireRate, BulletPrefab"]
+    B["ECS World Runtime<br/>Entity: Index 42, Version 1"]
+    C["Archetype<br/>PlayerTag + AutoShootConfig<br/>+ LocalTransform"]
+    D["Components<br/>메모리 연속 배치"]
+    E["System Update Loop<br/>SystemAPI.Query<br/>Archetype 기반 필터링"]
 
-    A -->|"Baking (빌드/재생 시)"<br/>Baker.Bake()| B
-
-    B["ECS World (Runtime)<br/>━━━━━━━━━━━━━━━━━━━━<br/>Entity: {Index: 42, Version: 1}"]
-
-    B --> C["Archetype<br/>━━━━━━━━━━━━━━━━━━━━<br/>PlayerTag + AutoShootConfig<br/>+ LocalTransform<br/><br/>(같은 조합 = 같은 Archetype)"]
-
-    C --> D["Components (메모리 연속 배치)<br/>━━━━━━━━━━━━━━━━━━━━<br/>• AutoShootConfig {Interval, Timer, Prefab}<br/>• LocalTransform {Position, Rotation, Scale}<br/>• PlayerTag {marker}"]
-
-    D -->|"Query & Iterate"| E
-
-    E["System Update Loop<br/>━━━━━━━━━━━━━━━━━━━━<br/>SystemAPI.Query<RefRW, RefRO><br/>.WithAll<PlayerTag><br/><br/>✅ Archetype 기반 빠른 필터링<br/>✅ 캐시 효율 극대화<br/>✅ Burst SIMD 최적화"]
+    A -->|Baking 시<br/>Baker.Bake| B
+    B --> C
+    C --> D
+    D -->|Query & Iterate| E
 
     style A fill:#e3f2fd
     style B fill:#fff3e0
@@ -343,13 +340,13 @@ public void OnUpdate(ref SystemState state)
 **ECB 실행 타이밍:**
 
 ```mermaid
-graph TB
-    A["SimulationSystemGroup<br/>(매 프레임)"]
-    A --> B["BeginSimulationECBSystem<br/>ECB 실행 (이전 프레임 명령)"]
+flowchart TB
+    A["SimulationSystemGroup<br/>매 프레임"]
+    A --> B["BeginSimulationECBSystem<br/>ECB 실행 이전 프레임 명령"]
     B --> C["AutoShootSystem<br/>ECB에 기록"]
     C --> D["BulletMovementSystem<br/>ECB에 기록"]
     D --> E["EnemySpawnSystem<br/>ECB에 기록"]
-    E --> F["EndSimulationECBSystem<br/>ECB 실행 (이번 프레임 명령)"]
+    E --> F["EndSimulationECBSystem<br/>ECB 실행 이번 프레임 명령"]
 
     style B fill:#ffe0b2
     style C fill:#e3f2fd
@@ -369,16 +366,16 @@ graph TB
 Unity Netcode는 **하나의 프로세스에 여러 World**를 생성합니다:
 
 ```mermaid
-graph TB
-    Process["Unity Process (단일 .exe)"]
+flowchart TB
+    Process["Unity Process<br/>단일 .exe"]
 
-    Process --> SW["Server World<br/>━━━━━━━━━━━━━━━━━━━━<br/>게임 로직 실행 (권위적)"]
-    SW --> SWE["Entities:<br/>플레이어, 적, 총알 (모든 Entity)"]
+    Process --> SW["Server World<br/>게임 로직 실행 권위적"]
+    SW --> SWE["Entities:<br/>플레이어, 적, 총알"]
 
-    Process --> CW["Client World<br/>━━━━━━━━━━━━━━━━━━━━<br/>입력 전송 + 예측"]
-    CW --> CWE["Entities:<br/>플레이어, 적, 총알<br/>(Ghost로 동기화된 Entity)"]
+    Process --> CW["Client World<br/>입력 전송 + 예측"]
+    CW --> CWE["Entities:<br/>Ghost로 동기화된 Entity"]
 
-    Process --> DW["Default World<br/>━━━━━━━━━━━━━━━━━━━━<br/>UI, 입력 처리 (비게임 로직)"]
+    Process --> DW["Default World<br/>UI, 입력 처리"]
 
     style Process fill:#e3f2fd
     style SW fill:#ffebee
@@ -494,20 +491,20 @@ public struct PlayerHealth : IComponentData
 ```mermaid
 sequenceDiagram
     participant S as Server
-    participant N as Network (UDP)
+    participant N as Network
     participant C as Client
 
     Note over S: Tick 0
-    S->>S: PlayerHealth {Current: 100}
-    S->>N: Ghost Snapshot 생성<br/>• DeltaCompression: 이전 Tick과 차이만<br/>• Quantization: float→int 압축
+    S->>S: PlayerHealth Current 100
+    S->>N: Ghost Snapshot 생성<br/>DeltaCompression 이전 Tick과 차이만<br/>Quantization float to int 압축
     N->>C: 네트워크 전송
-    Note over C: PlayerHealth {Current: 100} ✅
+    Note over C: PlayerHealth Current 100
 
     Note over S: Tick 1
-    S->>S: 적 공격 → CurrentHealth = 80
-    S->>N: Ghost Snapshot<br/>(CurrentHealth만 전송,<br/>MaxHealth 생략)
+    S->>S: 적 공격 CurrentHealth 80
+    S->>N: Ghost Snapshot<br/>CurrentHealth만 전송<br/>MaxHealth 생략
     N->>C: 네트워크 전송
-    Note over C: PlayerHealth {Current: 80}<br/>UI 업데이트 ✅
+    Note over C: PlayerHealth Current 80<br/>UI 업데이트
 ```
 
 **Prediction & Reconciliation:**
@@ -517,19 +514,19 @@ sequenceDiagram
     participant C as Client
     participant S as Server
 
-    Note over C: Tick 10: 입력 수집
-    C->>C: 즉시 이동 예측<br/>Position: 5.0 → 5.5
-    C->>S: PlayerInput {Horizontal: 1}
+    Note over C: Tick 10 입력 수집
+    C->>C: 즉시 이동 예측<br/>Position 5.0 to 5.5
+    C->>S: PlayerInput Horizontal 1
 
-    Note over S: Tick 12: 입력 수신 (RTT 2틱)
-    S->>S: 이동 처리<br/>Position: 5.0 → 5.5
-    S->>C: Ghost Snapshot {Position: 5.5}
+    Note over S: Tick 12 입력 수신 RTT 2틱
+    S->>S: 이동 처리<br/>Position 5.0 to 5.5
+    S->>C: Ghost Snapshot Position 5.5
 
-    Note over C: Tick 14: 수신 및 검증
+    Note over C: Tick 14 수신 및 검증
     alt 예측 일치
-        C->>C: 예측값(5.5) == 서버값(5.5)<br/>✅ 그대로 유지
+        C->>C: 예측값 5.5 == 서버값 5.5<br/>그대로 유지
     else 예측 불일치
-        C->>C: 예측값(5.6) != 서버값(5.5)<br/>⚠️ 5.5로 보정 (Snap)
+        C->>C: 예측값 5.6 != 서버값 5.5<br/>5.5로 보정 Snap
     end
 ```
 
@@ -649,35 +646,35 @@ sequenceDiagram
     participant U as User
 
     Note over S: Frame 1000
-    S->>S: StarCollectSystem<br/>별 수집 감지 (Physics Trigger)
-    S->>S: PlayerStarPoints += 10<br/>points >= 10 → 버프 선택 트리거
+    S->>S: StarCollectSystem<br/>별 수집 감지 Physics Trigger
+    S->>S: PlayerStarPoints += 10<br/>points 10 이상 버프 선택 트리거
     S->>S: BuffSelectionSystem<br/>랜덤 3개 옵션 선택<br/>BuffSelectionState 추가
-    S->>C: ShowBuffSelectionRpc<br/>[Damage Lv2, Speed Lv1, Magnet Lv3]
-    S->>C: GamePauseRpc {IsPaused: true}
-    Note over S: 시간 정지 (timeScale=0)
+    S->>C: ShowBuffSelectionRpc<br/>Damage Lv2, Speed Lv1, Magnet Lv3
+    S->>C: GamePauseRpc IsPaused true
+    Note over S: 시간 정지 timeScale 0
 
-    Note over C: Frame 1001~1050 (일시정지)
+    Note over C: Frame 1001-1050 일시정지
     C->>C: ShowBuffSelectionRpc 수신
-    C->>U: BuffSelectionUI.Show()<br/>3개 카드 표시
-    U-->>C: 선택 대기...
+    C->>U: BuffSelectionUI.Show<br/>3개 카드 표시
+    U-->>C: 선택 대기
 
     Note over C: Frame 1051
-    U->>C: "Damage Lv2" 클릭
-    C->>S: BuffSelectedRpc {BuffType: Damage}
-    C->>C: BuffSelectionUI.Hide()
+    U->>C: Damage Lv2 클릭
+    C->>S: BuffSelectedRpc BuffType Damage
+    C->>C: BuffSelectionUI.Hide
 
     Note over S: Frame 1053
-    S->>S: BuffApplySystem<br/>PlayerBuffs.DamageLevel++ (Lv1→Lv2)
+    S->>S: BuffApplySystem<br/>PlayerBuffs.DamageLevel++ Lv1 to Lv2
     Note over S: Ghost 동기화로<br/>클라에 자동 전파
-    S->>S: StatCalculationSystem<br/>DamageMultiplier = 1.2 (+20%)
-    S->>C: BuffAppliedRpc {Damage, Lv2}
-    S->>C: GamePauseRpc {IsPaused: false}
+    S->>S: StatCalculationSystem<br/>DamageMultiplier 1.2 +20%
+    S->>C: BuffAppliedRpc Damage Lv2
+    S->>C: GamePauseRpc IsPaused false
     Note over S: 게임 재개
 
     Note over C: Frame 1054
     C->>C: BuffAppliedRpc 수신
-    C->>U: BuffIconsUI.UpdateIcon()<br/>버프 아이콘 표시
-    C->>C: GamePauseRpc 수신<br/>게임 재개 ✅
+    C->>U: BuffIconsUI.UpdateIcon<br/>버프 아이콘 표시
+    C->>C: GamePauseRpc 수신<br/>게임 재개
 ```
 
 ---
@@ -770,17 +767,17 @@ if (shootConfig.ValueRW.Timer >= shootConfig.ValueRW.Interval)
 Unity ECS는 매 프레임마다 정해진 순서로 SystemGroup 실행:
 
 ```mermaid
-graph TB
+flowchart TB
     Frame["Frame N"]
 
     Frame --> Init["InitializationSystemGroup"]
     Init --> Init1["BeginInitializationECBSystem"]
-    Init1 --> Init2["CopyTransformFromGameObject (Hybrid)"]
+    Init1 --> Init2["CopyTransformFromGameObject Hybrid"]
     Init2 --> Init3["EndInitializationECBSystem"]
 
     Init3 --> Sim["SimulationSystemGroup"]
     Sim --> Sim1["BeginSimulationECBSystem"]
-    Sim1 --> Sim2["FixedStepSimulationSystemGroup (Physics)"]
+    Sim1 --> Sim2["FixedStepSimulationSystemGroup Physics"]
     Sim2 --> Sim3["PlayerMovementSystem"]
     Sim3 --> Sim4["BulletMovementSystem"]
     Sim4 --> Sim5["EnemyChaseSystem"]
@@ -789,7 +786,7 @@ graph TB
     Sim6 --> Pres["PresentationSystemGroup"]
     Pres --> Pres1["BeginPresentationECBSystem"]
     Pres1 --> Pres2["UpdateCameraSystem"]
-    Pres2 --> Pres3["CopyTransformToGameObject (Hybrid)"]
+    Pres2 --> Pres3["CopyTransformToGameObject Hybrid"]
     Pres3 --> Pres4["EndPresentationECBSystem"]
 
     style Init fill:#e3f2fd
