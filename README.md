@@ -97,11 +97,6 @@ flowchart LR
         B -->|Has| C
         C -->|Processed by| D
     end
-
-    style A fill:#ff6b6b
-    style B fill:#51cf66
-    style C fill:#51cf66
-    style D fill:#51cf66
 ```
 
 | OOP 문제점 ❌ | ECS 장점 ✅ |
@@ -124,12 +119,6 @@ flowchart TB
     B --> C
     C --> D
     D -->|Query & Iterate| E
-
-    style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#f3e5f5
-    style D fill:#e8f5e9
-    style E fill:#fce4ec
 ```
 
 **Archetype 개념:**
@@ -339,12 +328,6 @@ flowchart TB
     C --> D["BulletMovementSystem<br/>ECB에 기록"]
     D --> E["EnemySpawnSystem<br/>ECB에 기록"]
     E --> F["EndSimulationECBSystem<br/>ECB 실행 이번 프레임 명령"]
-
-    style B fill:#ffe0b2
-    style C fill:#e3f2fd
-    style D fill:#e3f2fd
-    style E fill:#e3f2fd
-    style F fill:#ffe0b2
 ```
 
 ---
@@ -368,11 +351,6 @@ flowchart TB
     CW --> CWE["Entities:<br/>Ghost로 동기화된 Entity"]
 
     Process --> DW["Default World<br/>UI, 입력 처리"]
-
-    style Process fill:#e3f2fd
-    style SW fill:#ffebee
-    style CW fill:#e8f5e9
-    style DW fill:#fff3e0
 ```
 
 **각 World의 역할:**
@@ -780,13 +758,6 @@ flowchart TB
     Pres1 --> Pres2["UpdateCameraSystem"]
     Pres2 --> Pres3["CopyTransformToGameObject Hybrid"]
     Pres3 --> Pres4["EndPresentationECBSystem"]
-
-    style Init fill:#e3f2fd
-    style Sim fill:#fff3e0
-    style Pres fill:#f3e5f5
-    style Sim3 fill:#c8e6c9
-    style Sim4 fill:#c8e6c9
-    style Sim5 fill:#c8e6c9
 ```
 
 **System 순서 지정:**
