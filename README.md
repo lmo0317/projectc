@@ -16,14 +16,6 @@
 
 ## 📹 게임 영상
 
-### 🎬 소개 영상
-
-https://github.com/user-attachments/assets/INTRODUCE_VIDEO_URL_HERE
-
-<sub>💡 **업로드 필요:** GitHub Issues에 `movie/introduce.mp4`를 드래그 앤 드롭하여 생성된 URL로 위 링크를 교체하세요.</sub>
-
----
-
 ### 🎮 플레이 영상
 
 https://github.com/user-attachments/assets/07e5c5ed-5831-4463-ad59-74e8c83206cd
