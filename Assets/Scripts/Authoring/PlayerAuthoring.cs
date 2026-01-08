@@ -41,6 +41,10 @@ public class PlayerAuthoring : MonoBehaviour
             AddComponent<PlayerDead>(entity);
             SetComponentEnabled<PlayerDead>(entity, false);
 
+            // PlayerInvincible 컴포넌트 추가 (활성화 상태로 시작 - 무적 모드)
+            AddComponent<PlayerInvincible>(entity);
+            SetComponentEnabled<PlayerInvincible>(entity, true);
+
             // 총알 Prefab Entity 참조 가져오기 (Renderable | Dynamic 필요!)
             var bulletPrefabEntity = GetEntity(authoring.BulletPrefab, TransformUsageFlags.Renderable | TransformUsageFlags.Dynamic);
 

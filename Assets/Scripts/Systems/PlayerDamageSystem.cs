@@ -38,9 +38,11 @@ public partial struct PlayerDamageSystem : ISystem
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
         // 살아있는 플레이어만 처리 (PlayerDead가 비활성화된 플레이어)
+        // 무적 모드(PlayerInvincible)인 플레이어는 제외
         foreach (var (playerTransform, playerHealth, ghostOwner, playerEntity) in
                  SystemAPI.Query<RefRW<LocalTransform>, RefRW<PlayerHealth>, RefRO<GhostOwner>>()
                      .WithDisabled<PlayerDead>()
+                     .WithDisabled<PlayerInvincible>()
                      .WithEntityAccess())
         {
             float3 playerPos = playerTransform.ValueRO.Position;
