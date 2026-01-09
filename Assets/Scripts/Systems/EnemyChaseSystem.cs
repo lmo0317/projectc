@@ -74,17 +74,18 @@ public partial struct EnemyChaseSystem : ISystem
         }
 
         // 3단계: 가장 가까운 플레이어 추적 + 충돌 회피 로직 실행
-        new EnemyChaseJob
+        var jobHandle = new EnemyChaseJob
         {
             AllPlayerPositions = playerPositions.AsArray(),
             DeltaTime = deltaTime,
             AllEnemyPositions = enemyPositions
-        }.ScheduleParallel();
+        }.ScheduleParallel(state.Dependency);
 
         // 4단계: Job 완료 후 NativeArray 정리
-        state.Dependency.Complete();
-        enemyPositions.Dispose();
-        playerPositions.Dispose();
+        // 최적화: Complete() 대신 의존성 체인으로 처리
+        enemyPositions.Dispose(jobHandle);
+        playerPositions.Dispose(jobHandle);
+        state.Dependency = jobHandle;
     }
 }
 
@@ -123,23 +124,31 @@ public partial struct EnemyChaseJob : IJobEntity
         }
 
         // 3. 다른 Enemy들로부터 떨어지는 방향 계산 (Separation)
+        // 최적화: 모든 Enemy를 체크하지 않고 샘플링 (최대 20개만 체크)
         float3 separationDirection = float3.zero;
         float separationRadius = 5.0f; // 충돌 회피 반경 증가 (Enemy 간 최소 거리)
+        float separationRadiusSq = separationRadius * separationRadius; // 제곱 거리로 미리 계산
         int nearbyCount = 0;
 
-        for (int i = 0; i < AllEnemyPositions.Length; i++)
+        int totalEnemies = AllEnemyPositions.Length;
+        int maxChecks = math.min(20, totalEnemies); // 최대 20개만 체크
+        int step = math.max(1, totalEnemies / maxChecks); // 샘플링 간격
+
+        for (int i = 0; i < totalEnemies; i += step)
         {
             float3 otherPosition = AllEnemyPositions[i];
 
             // 자기 자신은 제외
-            if (math.distancesq(currentPosition, otherPosition) < 0.01f)
+            float distSq = math.distancesq(currentPosition, otherPosition);
+            if (distSq < 0.01f)
                 continue;
 
-            float distance = math.distance(currentPosition, otherPosition);
-
             // 일정 반경 내의 다른 Enemy가 있으면 분리 힘 적용
-            if (distance < separationRadius)
+            // 최적화: 제곱 거리로 비교 (sqrt 연산 제거)
+            if (distSq < separationRadiusSq)
             {
+                float distance = math.sqrt(distSq); // 필요한 경우만 sqrt 계산
+
                 // 다른 Enemy로부터 멀어지는 방향
                 float3 awayDirection = currentPosition - otherPosition;
                 awayDirection.y = 0;
