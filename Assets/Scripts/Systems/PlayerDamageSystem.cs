@@ -11,10 +11,10 @@ using UnityEngine;
 /// <summary>
 /// 몬스터-플레이어 충돌 처리 시스템 (Server에서만 실행)
 /// 플레이어가 죽으면 PlayerDead 활성화 + 화면 밖으로 이동
+/// 이전 프레임의 Physics 데이터를 사용 (WaitForJobGroupID 방지)
 /// </summary>
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(PhysicsSystemGroup))] // Physics Broadphase 업데이트 이후 실행
 [BurstCompile]
 public partial struct PlayerDamageSystem : ISystem
 {

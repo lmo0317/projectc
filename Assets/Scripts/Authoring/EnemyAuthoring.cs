@@ -20,6 +20,12 @@ public class EnemyAuthoring : MonoBehaviour
             AddComponent(entity, new EnemyHealth { Value = authoring.Health });
             AddComponent(entity, new EnemySpeed { Value = authoring.Speed });
 
+            // Ghost Importance Scaling 컴포넌트 추가 (거리 기반 네트워크 동기화 최적화)
+            AddComponent(entity, new GhostDistanceImportance
+            {
+                ImportanceValue = 100 // 기본값: 최고 우선순위
+            });
+
             // PhysicsCollider 추가 (Sphere) - 쿼리 전용으로 설정
             // Material에 CollisionResponse = None 설정 (시뮬레이션 비활성화, 쿼리만 가능)
             var material = new Unity.Physics.Material

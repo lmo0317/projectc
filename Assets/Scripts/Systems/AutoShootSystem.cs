@@ -3,16 +3,17 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Physics;
+using Unity.Physics.Systems;
 using Unity.Transforms;
 
 /// <summary>
 /// 자동 발사 시스템 (Server만 실행)
-/// TransformSystemGroup 직전에 실행하여 최신 위치에서 발사
+/// 이전 프레임의 Physics 데이터를 사용 (WaitForJobGroupID 방지)
 /// StatCalculationSystem 이후에 실행하여 버프 적용된 스탯 사용
 /// </summary>
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateBefore(typeof(TransformSystemGroup))]
 [UpdateAfter(typeof(StatCalculationSystem))]
 [BurstCompile]
 public partial struct AutoShootSystem : ISystem
@@ -23,7 +24,6 @@ public partial struct AutoShootSystem : ISystem
         state.RequireForUpdate<AutoShootConfig>();
     }
 
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         // 버프 선택 중이면 발사 중지
@@ -33,6 +33,13 @@ public partial struct AutoShootSystem : ISystem
                 return;
         }
 
+        // PhysicsWorld 싱글톤 접근
+        if (!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var physicsWorldSingleton))
+        {
+            return; // Physics 시스템 초기화 대기
+        }
+
+        var collisionWorld = physicsWorldSingleton.PhysicsWorld.CollisionWorld;
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         // ECB 사용 (즉시 실행되는 ECB)
@@ -52,7 +59,7 @@ public partial struct AutoShootSystem : ISystem
             {
                 shootConfig.ValueRW.TimeSinceLastShot = 0f;
 
-                // === 타겟팅 로직 ===
+                // === 타겟팅 로직 (Unity.Physics OverlapSphere 사용) ===
                 const float MAX_TARGETING_RANGE = 30f;
                 float3 playerPos = transform.ValueRO.Position;
                 float3 playerForward = math.mul(transform.ValueRO.Rotation, new float3(0, 0, 1));
@@ -60,20 +67,29 @@ public partial struct AutoShootSystem : ISystem
                 Entity targetEntity = Entity.Null;
                 float closestDistance = float.MaxValue;
 
-                foreach (var (enemyTransform, enemyEntity) in
-                         SystemAPI.Query<RefRO<LocalTransform>>()
-                             .WithAll<EnemyTag>()
-                             .WithEntityAccess())
+                // Physics 쿼리로 범위 내 Enemy만 검색 (O(log N))
+                var filter = new CollisionFilter
                 {
-                    float3 enemyPos = enemyTransform.ValueRO.Position;
-                    float distance = math.distance(playerPos, enemyPos);
+                    BelongsTo = 1u << 0,    // Layer 0: Player
+                    CollidesWith = 1u << 2, // Layer 2: Enemy만 검색
+                    GroupIndex = 0
+                };
 
-                    if (distance <= MAX_TARGETING_RANGE && distance < closestDistance)
+                var hitList = new NativeList<DistanceHit>(Allocator.Temp);
+                if (collisionWorld.OverlapSphere(playerPos, MAX_TARGETING_RANGE, ref hitList, filter))
+                {
+                    // 가장 가까운 Enemy 찾기
+                    for (int i = 0; i < hitList.Length; i++)
                     {
-                        closestDistance = distance;
-                        targetEntity = enemyEntity;
+                        float distance = hitList[i].Distance;
+                        if (distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            targetEntity = hitList[i].Entity;
+                        }
                     }
                 }
+                hitList.Dispose();
 
                 // === 버프 적용된 미사일 개수 계산 ===
                 int missileCount = shootConfig.ValueRO.BaseMissileCount + modifiers.ValueRO.BonusMissileCount;
