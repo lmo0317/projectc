@@ -63,23 +63,23 @@ public partial class GameSessionSystem : SystemBase
             connectedPlayerCount++;
         }
 
-        // 살아있는 플레이어 수 계산
+        // 살아있는 플레이어 수 계산 (Query 기반 - EntityManager 접근 제거)
         int alivePlayerCount = 0;
         int deadPlayerCount = 0;
 
-        // PlayerDead가 활성화된 플레이어는 죽은 것으로 카운트
-        foreach (var (playerTag, entity) in
-                 SystemAPI.Query<RefRO<PlayerTag>>()
+        // PlayerDead가 비활성화된 플레이어 = 살아있는 플레이어
+        foreach (var _ in SystemAPI.Query<RefRO<PlayerTag>>()
                      .WithAll<PlayerHealth>()
-                     .WithEntityAccess())
+                     .WithDisabled<PlayerDead>())
         {
-            bool isDead = EntityManager.HasComponent<PlayerDead>(entity) &&
-                          EntityManager.IsComponentEnabled<PlayerDead>(entity);
+            alivePlayerCount++;
+        }
 
-            if (isDead)
-                deadPlayerCount++;
-            else
-                alivePlayerCount++;
+        // PlayerDead가 활성화된 플레이어 = 죽은 플레이어
+        foreach (var _ in SystemAPI.Query<RefRO<PlayerTag>>()
+                     .WithAll<PlayerHealth, PlayerDead>())
+        {
+            deadPlayerCount++;
         }
 
         // 총 플레이어 Entity 수
@@ -186,17 +186,14 @@ public partial class GameSessionSystem : SystemBase
             bulletsRemoved++;
         }
 
-        // 죽은 플레이어 Entity 제거 (enabled 상태 확인)
+        // 죽은 플레이어 Entity 제거 (Query 기반 최적화)
         foreach (var (playerTag, entity) in
                  SystemAPI.Query<RefRO<PlayerTag>>()
+                     .WithAll<PlayerDead>() // PlayerDead가 활성화된 것만
                      .WithEntityAccess())
         {
-            if (EntityManager.HasComponent<PlayerDead>(entity) &&
-                EntityManager.IsComponentEnabled<PlayerDead>(entity))
-            {
-                ecb.DestroyEntity(entity);
-                deadPlayersRemoved++;
-            }
+            ecb.DestroyEntity(entity);
+            deadPlayersRemoved++;
         }
 
         ecb.Playback(EntityManager);
@@ -220,16 +217,14 @@ public partial class GameSessionSystem : SystemBase
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         int count = 0;
 
+        // Query 기반 최적화 - EntityManager 접근 제거
         foreach (var (playerTag, entity) in
                  SystemAPI.Query<RefRO<PlayerTag>>()
+                     .WithAll<PlayerDead>() // PlayerDead가 활성화된 것만
                      .WithEntityAccess())
         {
-            if (EntityManager.HasComponent<PlayerDead>(entity) &&
-                EntityManager.IsComponentEnabled<PlayerDead>(entity))
-            {
-                ecb.DestroyEntity(entity);
-                count++;
-            }
+            ecb.DestroyEntity(entity);
+            count++;
         }
 
         ecb.Playback(EntityManager);

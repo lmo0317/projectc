@@ -3,6 +3,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Physics;
+using Unity.Physics.Systems;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -12,7 +14,7 @@ using UnityEngine;
 /// </summary>
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(EnemyChaseSystem))]
+[UpdateAfter(typeof(PhysicsSystemGroup))] // Physics Broadphase 업데이트 이후 실행
 [BurstCompile]
 public partial struct PlayerDamageSystem : ISystem
 {
@@ -35,6 +37,14 @@ public partial struct PlayerDamageSystem : ISystem
         if (currentTime - lastDamageTime < DamageCooldown)
             return;
 
+        // PhysicsWorld 싱글톤 접근 (Physics 시스템이 초기화되어야 함)
+        if (!SystemAPI.TryGetSingleton<PhysicsWorldSingleton>(out var physicsWorldSingleton))
+        {
+            // Physics 시스템이 아직 초기화되지 않음
+            return;
+        }
+
+        var collisionWorld = physicsWorldSingleton.PhysicsWorld.CollisionWorld;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
         // 살아있는 플레이어만 처리 (PlayerDead가 비활성화된 플레이어)
@@ -48,23 +58,25 @@ public partial struct PlayerDamageSystem : ISystem
             float3 playerPos = playerTransform.ValueRO.Position;
             bool isInDanger = false;
 
-            // 최적화: 제곱 거리 사용 (sqrt 연산 제거)
-            float damageRangeSq = 2.0f * 2.0f; // 4.0
-
-            // 모든 Enemy와 거리 체크
-            foreach (var enemyTransform in
-                     SystemAPI.Query<RefRO<LocalTransform>>()
-                         .WithAll<EnemyTag>())
+            // Physics 쿼리 설정
+            float damageRadius = 2.0f;
+            var filter = new CollisionFilter
             {
-                // 최적화: distancesq 사용 (sqrt 없음)
-                float distSq = math.distancesq(playerPos, enemyTransform.ValueRO.Position);
+                BelongsTo = 1u << 0,    // Layer 0: Player
+                CollidesWith = 1u << 2, // Layer 2: Enemy만 검색
+                GroupIndex = 0
+            };
 
-                if (distSq < damageRangeSq)
-                {
-                    isInDanger = true;
-                    break;
-                }
+            // OverlapSphere 쿼리 (BVH를 통한 O(log N) 검색)
+            var hitList = new NativeList<DistanceHit>(Allocator.Temp);
+
+            if (collisionWorld.OverlapSphere(playerPos, damageRadius, ref hitList, filter))
+            {
+                // 최소 1개 이상의 Enemy가 범위 내에 있음
+                isInDanger = hitList.Length > 0;
             }
+
+            hitList.Dispose();
 
             if (isInDanger)
             {

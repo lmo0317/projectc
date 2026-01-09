@@ -20,11 +20,11 @@ public class EnemyAuthoring : MonoBehaviour
             AddComponent(entity, new EnemyHealth { Value = authoring.Health });
             AddComponent(entity, new EnemySpeed { Value = authoring.Speed });
 
-            // PhysicsCollider 추가 (Sphere) - Trigger로 설정
-            // Material에 RaiseTriggerEvents 설정
+            // PhysicsCollider 추가 (Sphere) - 쿼리 전용으로 설정
+            // Material에 CollisionResponse = None 설정 (시뮬레이션 비활성화, 쿼리만 가능)
             var material = new Unity.Physics.Material
             {
-                CollisionResponse = CollisionResponsePolicy.RaiseTriggerEvents
+                CollisionResponse = CollisionResponsePolicy.None // 쿼리 전용
             };
 
             var collider = Unity.Physics.SphereCollider.Create(
@@ -43,6 +43,16 @@ public class EnemyAuthoring : MonoBehaviour
             );
 
             AddComponent(entity, new PhysicsCollider { Value = collider });
+
+            // PhysicsVelocity 추가 (Kinematic Body로 만들어 Broadphase 업데이트)
+            AddComponent(entity, new PhysicsVelocity
+            {
+                Linear = float3.zero,
+                Angular = float3.zero
+            });
+
+            // PhysicsMass 추가 (Kinematic Body 설정)
+            AddComponent(entity, PhysicsMass.CreateKinematic(MassProperties.UnitSphere));
         }
     }
 }
