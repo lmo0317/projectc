@@ -48,14 +48,18 @@ public partial struct PlayerDamageSystem : ISystem
             float3 playerPos = playerTransform.ValueRO.Position;
             bool isInDanger = false;
 
+            // 최적화: 제곱 거리 사용 (sqrt 연산 제거)
+            float damageRangeSq = 2.0f * 2.0f; // 4.0
+
             // 모든 Enemy와 거리 체크
             foreach (var enemyTransform in
                      SystemAPI.Query<RefRO<LocalTransform>>()
                          .WithAll<EnemyTag>())
             {
-                float distance = math.distance(playerPos, enemyTransform.ValueRO.Position);
+                // 최적화: distancesq 사용 (sqrt 없음)
+                float distSq = math.distancesq(playerPos, enemyTransform.ValueRO.Position);
 
-                if (distance < 2.0f)
+                if (distSq < damageRangeSq)
                 {
                     isInDanger = true;
                     break;
