@@ -34,12 +34,9 @@ public class BuffSelectionUI : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("[BuffSelectionUI] Awake 호출됨");
-
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("[BuffSelectionUI] Instance 설정됨");
         }
         else
         {
@@ -65,7 +62,6 @@ public class BuffSelectionUI : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("[BuffSelectionUI] Instance 설정됨 (OnEnable)");
         }
     }
 
@@ -118,8 +114,6 @@ public class BuffSelectionUI : MonoBehaviour
         // 커서 표시
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-
-        Debug.Log($"[BuffSelectionUI] 버프 선택 UI 표시: {(BuffType)option1Type}, {(BuffType)option2Type}, {(BuffType)option3Type}");
     }
 
     /// <summary>
@@ -139,8 +133,6 @@ public class BuffSelectionUI : MonoBehaviour
         }
 
         // 서버가 게임 재개를 처리하므로 클라이언트에서는 Time.timeScale을 조정하지 않음
-
-        Debug.Log("[BuffSelectionUI] 버프 선택 UI 숨김");
     }
 
     /// <summary>
@@ -148,8 +140,6 @@ public class BuffSelectionUI : MonoBehaviour
     /// </summary>
     private void OnBuffSelected(int buffType)
     {
-        Debug.Log($"[BuffSelectionUI] 버프 선택됨: {(BuffType)buffType}");
-
         // 서버에 선택 결과 전송
         SendBuffSelectedRpc(buffType);
 
@@ -194,8 +184,6 @@ public class BuffSelectionUI : MonoBehaviour
             SelectedBuffType = selectedBuffType
         });
         entityManager.AddComponent<SendRpcCommandRequest>(rpcEntity);
-
-        Debug.Log($"[BuffSelectionUI] BuffSelectedRpc 전송: {(BuffType)selectedBuffType}");
     }
 
     /// <summary>
@@ -219,7 +207,6 @@ public class BuffSelectionUI : MonoBehaviour
             WaitingPanel = GameObject.Find("BuffWaitingPanel");
             if (WaitingPanel != null)
             {
-                Debug.Log("[BuffSelectionUI] BuffWaitingPanel을 씬에서 찾음");
                 // WaitingText도 찾기
                 if (WaitingText == null)
                 {
@@ -236,7 +223,6 @@ public class BuffSelectionUI : MonoBehaviour
         if (WaitingPanel != null)
         {
             WaitingPanel.SetActive(true);
-            Debug.Log("[BuffSelectionUI] 대기 UI 표시");
         }
         else
         {
@@ -265,8 +251,6 @@ public class BuffSelectionUI : MonoBehaviour
         {
             WaitingPanel.SetActive(false);
         }
-
-        Debug.Log("[BuffSelectionUI] 대기 UI 숨김");
     }
 
     /// <summary>

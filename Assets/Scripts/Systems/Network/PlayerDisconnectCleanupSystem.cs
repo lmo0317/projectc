@@ -49,9 +49,6 @@ public partial class PlayerDisconnectCleanupSystem : SystemBase
             // 연결 Entity가 삭제되었는지 확인
             if (!EntityManager.Exists(connectionEntity))
             {
-                int networkId = ghostOwner.ValueRO.NetworkId;
-                Debug.Log($"[PlayerDisconnectCleanup] Player {networkId} disconnected - marking as dead (remaining connections: {inGameConnectionCount})");
-
                 // 체력 0으로 설정
                 playerHealth.ValueRW.CurrentHealth = 0;
 
@@ -75,9 +72,6 @@ public partial class PlayerDisconnectCleanupSystem : SystemBase
             // 연결 Entity가 삭제되었는지 확인
             if (!EntityManager.Exists(connectionEntity))
             {
-                int networkId = ghostOwner.ValueRO.NetworkId;
-                Debug.Log($"[PlayerDisconnectCleanup] Dead player {networkId}'s connection gone - removing entity (remaining connections: {inGameConnectionCount})");
-
                 // 죽은 플레이어 Entity 직접 삭제
                 ecb.DestroyEntity(entity);
             }

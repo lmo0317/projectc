@@ -56,8 +56,6 @@ public partial class GameOverSystem : SystemBase
         // 죽음 상태 변화 감지 (false → true: 방금 죽음)
         if (isDeadNow && !wasDeadLastFrame)
         {
-            Debug.Log($"[GameOverSystem] My player (NetworkId {myNetworkId}) died! Showing GameOver UI");
-
             // 게임 통계 가져오기
             float survivalTime = 0f;
             int killCount = 0;
@@ -78,8 +76,6 @@ public partial class GameOverSystem : SystemBase
         // 부활 감지 (true → false: 방금 부활)
         else if (!isDeadNow && wasDeadLastFrame)
         {
-            Debug.Log($"[GameOverSystem] My player (NetworkId {myNetworkId}) respawned! Hiding GameOver UI");
-
             // GameOver UI 숨기기
             if (uiManager != null)
             {

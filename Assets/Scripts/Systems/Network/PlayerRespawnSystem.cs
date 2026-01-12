@@ -39,7 +39,6 @@ public partial class PlayerRespawnSystem : SystemBase
             }
 
             var networkId = EntityManager.GetComponentData<NetworkId>(connectionEntity).Value;
-            Debug.Log($"[PlayerRespawnSystem] Received respawn request from NetworkId: {networkId}");
 
             // 해당 플레이어 Entity 찾기
             bool foundPlayer = false;
@@ -61,7 +60,6 @@ public partial class PlayerRespawnSystem : SystemBase
                     // 3. PlayerDead 비활성화
                     ecb.SetComponentEnabled<PlayerDead>(playerEntity, false);
 
-                    Debug.Log($"[PlayerRespawnSystem] Player {networkId} respawned at ({randomX:F1}, 0.5, {randomZ:F1})");
                     foundPlayer = true;
                     break;
                 }

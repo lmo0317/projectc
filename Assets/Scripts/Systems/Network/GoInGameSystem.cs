@@ -33,7 +33,6 @@ public partial class GoInGameSystem : SystemBase
                      .WithNone<NetworkStreamInGame>()
                      .WithEntityAccess())
         {
-            Debug.Log($"[{worldName}] Go in game connection {id.Value}");
             commandBuffer.AddComponent<NetworkStreamInGame>(ent);
         }
 

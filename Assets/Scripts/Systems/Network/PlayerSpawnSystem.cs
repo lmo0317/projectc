@@ -28,7 +28,6 @@ public partial struct PlayerSpawnSystem : ISystem
             .WithNone<PlayerSpawned>()
             .Build();
 
-        UnityEngine.Debug.Log("[PlayerSpawnSystem] OnCreate - Waiting for Spawner");
     }
 
     [BurstCompile]
@@ -60,7 +59,6 @@ public partial struct PlayerSpawnSystem : ISystem
 
         foreach (var deadPlayer in deadPlayersToRemove)
         {
-            UnityEngine.Debug.Log($"[PlayerSpawnSystem] Removing orphaned dead player");
             state.EntityManager.DestroyEntity(deadPlayer);
         }
         deadPlayersToRemove.Dispose();
@@ -71,8 +69,6 @@ public partial struct PlayerSpawnSystem : ISystem
             var connectionEntity = connectionEntities[i];
 
             var player = state.EntityManager.Instantiate(prefab);
-
-            UnityEngine.Debug.Log($"[SpawnPlayerSystem][{state.WorldUnmanaged.Name}] Spawning player for NetworkId {networkId.Value}");
 
             // 스폰 위치 오프셋 (겹치지 않게)
             var localTransform = state.EntityManager.GetComponentData<LocalTransform>(prefab);

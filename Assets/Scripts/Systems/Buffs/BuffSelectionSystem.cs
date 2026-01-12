@@ -60,8 +60,6 @@ public partial struct BuffSelectionSystem : ISystem
             // 포인트가 임계값에 도달했는지 체크
             if (starPoints.ValueRO.CurrentPoints >= starPoints.ValueRO.NextBuffThreshold)
             {
-                Debug.Log($"[BuffSelection] 버프 선택 트리거! 포인트: {starPoints.ValueRO.CurrentPoints} >= {starPoints.ValueRO.NextBuffThreshold}");
-
                 // 포인트 차감
                 starPoints.ValueRW.CurrentPoints -= starPoints.ValueRW.NextBuffThreshold;
 
@@ -72,8 +70,6 @@ public partial struct BuffSelectionSystem : ISystem
 
                 // 랜덤 3개 버프 선택 (최대 레벨 아닌 것들 중에서)
                 var options = SelectRandomBuffs(buffs.ValueRO, ref _random);
-
-                Debug.Log($"[BuffSelection] 선택된 버프: {(BuffType)options.x}, {(BuffType)options.y}, {(BuffType)options.z}");
 
                 // 버프 선택 상태 활성화
                 selectionState.ValueRW.IsSelecting = true;
@@ -86,7 +82,6 @@ public partial struct BuffSelectionSystem : ISystem
                 {
                     sessionState.BuffSelectingPlayerCount++;
                     state.EntityManager.SetComponentData(sessionEntity, sessionState);
-                    Debug.Log($"[BuffSelection] 게임 일시정지! 버프 선택 중 플레이어: {sessionState.BuffSelectingPlayerCount}");
                 }
 
                 // 모든 클라이언트에 게임 일시정지 RPC 전송
@@ -136,8 +131,6 @@ public partial struct BuffSelectionSystem : ISystem
                         TargetConnection = targetConnection
                     });
                 }
-
-                Debug.Log("[BuffSelection] ShowBuffSelectionRpc 전송됨");
             }
         }
 

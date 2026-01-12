@@ -15,7 +15,6 @@ public partial struct BuffSelectionClientSystem : ISystem
 {
     public void OnCreate(ref SystemState state)
     {
-        Debug.Log($"[BuffSelectionClientSystem] OnCreate - World: {state.World.Name}");
     }
 
     public void OnUpdate(ref SystemState state)
@@ -34,8 +33,6 @@ public partial struct BuffSelectionClientSystem : ISystem
             bool isPaused = rpc.ValueRO.IsPaused;
             int selectingPlayerId = rpc.ValueRO.SelectingPlayerNetworkId;
 
-            Debug.Log($"[BuffSelectionClientSystem] GamePauseRpc 수신: IsPaused={isPaused}, SelectingPlayer={selectingPlayerId}, LocalPlayer={localNetworkId}");
-
             if (BuffSelectionUI.Instance == null)
             {
                 Debug.LogWarning("[BuffSelectionClientSystem] BuffSelectionUI.Instance가 없습니다!");
@@ -51,18 +48,12 @@ public partial struct BuffSelectionClientSystem : ISystem
 
                 if (!isMySelection)
                 {
-                    Debug.Log($"[BuffSelectionClientSystem] 다른 플레이어({selectingPlayerId})가 선택 중 - 대기 UI 표시");
                     BuffSelectionUI.Instance.ShowWaiting();
-                }
-                else
-                {
-                    Debug.Log($"[BuffSelectionClientSystem] 내가 선택 중 - 대기 UI 표시 안 함");
                 }
             }
             else
             {
                 // 게임 재개 - 모든 UI 숨기기
-                Debug.Log($"[BuffSelectionClientSystem] 게임 재개 - UI 숨기기");
                 BuffSelectionUI.Instance.HideAll();
             }
 
@@ -76,8 +67,6 @@ public partial struct BuffSelectionClientSystem : ISystem
                      .WithAll<ReceiveRpcCommandRequest>()
                      .WithEntityAccess())
         {
-            Debug.Log($"[BuffSelectionClientSystem] ShowBuffSelectionRpc 수신! World: {state.World.Name}");
-
             // 대기 UI가 표시 중이면 숨기기
             if (BuffSelectionUI.Instance != null && BuffSelectionUI.Instance.IsWaiting)
             {
@@ -112,15 +101,11 @@ public partial struct BuffSelectionClientSystem : ISystem
             var buffType = (BuffType)rpc.ValueRO.BuffType;
             var newLevel = rpc.ValueRO.NewLevel;
 
-            Debug.Log($"[BuffSelectionClientSystem] 버프 적용 RPC 수신: Player={playerNetworkId}, {buffType} Lv.{newLevel}, LocalPlayer={localNetworkId}");
-
             // 자신의 플레이어인지 확인 (로컬 플레이어의 버프만 UI에 표시)
             bool isLocalPlayer = (localNetworkId > 0 && playerNetworkId == localNetworkId);
 
             if (isLocalPlayer)
             {
-                Debug.Log($"[BuffSelectionClientSystem] 내 버프 적용: {buffType} Lv.{newLevel}");
-
                 // 버프 획득 이펙트 재생
                 if (BuffEffectPool.Instance != null)
                 {
@@ -143,10 +128,6 @@ public partial struct BuffSelectionClientSystem : ISystem
                 {
                     GameSoundManager.Instance.PlayBuffAcquired(buffType);
                 }
-            }
-            else
-            {
-                Debug.Log($"[BuffSelectionClientSystem] 다른 플레이어({playerNetworkId})의 버프 - UI 업데이트 안 함");
             }
 
             // RPC 엔티티 삭제

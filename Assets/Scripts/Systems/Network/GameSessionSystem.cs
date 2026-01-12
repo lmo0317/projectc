@@ -43,7 +43,6 @@ public partial class GameSessionSystem : SystemBase
                 GameOverTime = 0
             });
 
-            Debug.Log("[GameSessionSystem] Session initialized - waiting for players");
             hasInitialized = true;
         }
     }
@@ -90,14 +89,14 @@ public partial class GameSessionSystem : SystemBase
         // 디버그: 매 프레임 상태 로깅 (조건이 근접할 때만 또는 연결 없을 때)
         if (sessionState.HasHadPlayers && (connectedPlayerCount == 0 || alivePlayerCount <= 1))
         {
-            Debug.Log($"[GameSessionSystem] State check - connected: {connectedPlayerCount}, alive: {alivePlayerCount}, dead: {deadPlayerCount}, total: {totalPlayerEntities}, enemies: {enemyCount}, HasHadPlayers: {sessionState.HasHadPlayers}, needsCleanup: {needsCleanup}");
+            //Debug.Log($"[GameSessionSystem] State check - connected: {connectedPlayerCount}, alive: {alivePlayerCount}, dead: {deadPlayerCount}, total: {totalPlayerEntities}, enemies: {enemyCount}, HasHadPlayers: {sessionState.HasHadPlayers}, needsCleanup: {needsCleanup}");
         }
 
         // 모든 플레이어가 나갔을 때 정리 플래그 설정
         // 조건: 플레이어가 있었고, 현재 연결이 없고, 살아있는 플레이어도 없음
         if (sessionState.HasHadPlayers && connectedPlayerCount == 0 && alivePlayerCount == 0)
         {
-            Debug.Log($"[GameSessionSystem] All players gone - marking for cleanup (enemies: {enemyCount}, dead: {deadPlayerCount})");
+            //Debug.Log($"[GameSessionSystem] All players gone - marking for cleanup (enemies: {enemyCount}, dead: {deadPlayerCount})");
             needsCleanup = true;
 
             // 죽은 플레이어 Entity들도 즉시 제거 (다음 접속 전에)
@@ -116,14 +115,12 @@ public partial class GameSessionSystem : SystemBase
             // 정리가 필요하면 실행
             if (needsCleanup || enemyCount > 0 || deadPlayerCount > 0)
             {
-                Debug.Log($"[GameSessionSystem] New player joined - cleaning up (enemies: {enemyCount}, stars: {CountStars()}, dead: {deadPlayerCount})");
                 CleanupPreviousGame();
                 needsCleanup = false;
             }
 
             sessionState.HasHadPlayers = true;
             EntityManager.SetComponentData(sessionEntity, sessionState);
-            Debug.Log("[GameSessionSystem] First player joined - new game started");
         }
     }
 
@@ -199,8 +196,6 @@ public partial class GameSessionSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
 
-        Debug.Log($"[GameSessionSystem] Cleanup done - removed {enemiesRemoved} enemies, {starsRemoved} stars, {bulletsRemoved} bullets, {deadPlayersRemoved} dead players");
-
         // GameStats 리셋
         foreach (var stats in SystemAPI.Query<RefRW<GameStats>>())
         {
@@ -229,10 +224,5 @@ public partial class GameSessionSystem : SystemBase
 
         ecb.Playback(EntityManager);
         ecb.Dispose();
-
-        if (count > 0)
-        {
-            Debug.Log($"[GameSessionSystem] CleanupDeadPlayers - removed {count} dead players");
-        }
     }
 }

@@ -136,8 +136,6 @@ public class BuffIconsUI : MonoBehaviour
 
         // 레벨 업데이트
         iconItem.SetLevel(level);
-
-        Debug.Log($"[BuffIconsUI] 버프 아이콘 업데이트: {buffType} Lv.{level}");
     }
 
     /// <summary>

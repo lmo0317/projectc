@@ -105,7 +105,6 @@ public class GameSoundManager : MonoBehaviour
         {
             PlaySfx(BuffAcquiredClip);
         }
-        Debug.Log($"[GameSoundManager] 버프 사운드 재생: {buffType}");
     }
 
     /// <summary>

@@ -4,7 +4,9 @@ using UnityEngine;
 
 /// <summary>
 /// World 타입과 Entity 개수를 출력하는 디버그 시스템
+/// 성능 문제로 비활성화됨 - 필요시 DisableAutoCreation 속성 제거
 /// </summary>
+[DisableAutoCreation]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 public partial class WorldDebugSystem : SystemBase

@@ -38,7 +38,6 @@ public partial class DebugAddPointsSystem : SystemBase
 
             var networkId = EntityManager.GetComponentData<NetworkId>(connectionEntity).Value;
             int amount = rpc.ValueRO.Amount;
-            Debug.Log($"[DebugAddPointsSystem] Received add points request from NetworkId: {networkId}, Amount: {amount}");
 
             // 해당 플레이어 Entity 찾기
             bool foundPlayer = false;
@@ -53,7 +52,6 @@ public partial class DebugAddPointsSystem : SystemBase
                     starPoints.ValueRW.CurrentPoints += amount;
                     starPoints.ValueRW.TotalCollected += amount;
 
-                    Debug.Log($"[DebugAddPointsSystem] Player {networkId} received +{amount} points! (Current: {starPoints.ValueRW.CurrentPoints})");
                     foundPlayer = true;
                     break;
                 }

@@ -38,7 +38,6 @@ public class BuffEffectPool : MonoBehaviour
         {
             if (CreateFallbackEffect)
             {
-                Debug.Log("[BuffEffectPool] 프리팹 없음 - 기본 이펙트 생성");
                 BuffEffectPrefab = CreateDefaultBuffEffect();
             }
             else
@@ -160,8 +159,6 @@ public class BuffEffectPool : MonoBehaviour
         {
             StartCoroutine(ReturnToPool(obj, 1f));
         }
-
-        Debug.Log($"[BuffEffectPool] 버프 이펙트 재생: {buffType} at {position}");
     }
 
     /// <summary>

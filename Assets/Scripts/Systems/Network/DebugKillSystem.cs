@@ -39,7 +39,6 @@ public partial class DebugKillSystem : SystemBase
             }
 
             var networkId = EntityManager.GetComponentData<NetworkId>(connectionEntity).Value;
-            Debug.Log($"[DebugKillSystem] Received kill request from NetworkId: {networkId}");
 
             // 해당 플레이어 Entity 찾기
             bool foundPlayer = false;
@@ -59,7 +58,6 @@ public partial class DebugKillSystem : SystemBase
                     // 3. PlayerDead 활성화
                     ecb.SetComponentEnabled<PlayerDead>(playerEntity, true);
 
-                    Debug.Log($"[DebugKillSystem] Player {networkId} killed!");
                     foundPlayer = true;
                     break;
                 }

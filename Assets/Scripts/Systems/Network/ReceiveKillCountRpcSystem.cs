@@ -28,21 +28,11 @@ public partial class ReceiveKillCountRpcSystem : SystemBase
                      .WithAll<ReceiveRpcCommandRequest>()
                      .WithEntityAccess())
         {
-            Debug.Log($"[{World.Name}] Received KillCount RPC: +{rpcData.IncrementAmount}");
-
             // GameStats 업데이트
-            bool foundStats = false;
             foreach (var stats in SystemAPI.Query<RefRW<GameStats>>())
             {
                 stats.ValueRW.KillCount += rpcData.IncrementAmount;
-                Debug.Log($"[{World.Name}] Updated KillCount: {stats.ValueRW.KillCount}");
-                foundStats = true;
                 break;  // 싱글톤
-            }
-
-            if (!foundStats)
-            {
-                Debug.LogWarning($"[{World.Name}] GameStats not found! Cannot update KillCount.");
             }
 
             // RPC Entity 삭제 (필수!)

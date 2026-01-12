@@ -84,8 +84,6 @@ public partial struct PlayerDamageSystem : ISystem
                 playerHealth.ValueRW.CurrentHealth -= 10f;
                 lastDamageTime = currentTime;
 
-                Debug.Log($"[PlayerDamageSystem] Player {ghostOwner.ValueRO.NetworkId} hit! HP: {playerHealth.ValueRO.CurrentHealth}/{playerHealth.ValueRO.MaxHealth}");
-
                 // 체력 0 이하 → 사망 처리
                 if (playerHealth.ValueRO.CurrentHealth <= 0)
                 {
@@ -96,8 +94,6 @@ public partial struct PlayerDamageSystem : ISystem
 
                     // 화면 밖으로 이동 (렌더링 안 되도록)
                     playerTransform.ValueRW.Position = new float3(0, -1000, 0);
-
-                    Debug.Log($"[PlayerDamageSystem] Player {ghostOwner.ValueRO.NetworkId} died! Moved to Y=-1000");
                 }
 
                 break; // 한 프레임에 한 플레이어만 처리

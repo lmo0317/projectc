@@ -91,12 +91,10 @@ public partial struct BuffApplySystem : ISystem
                     {
                         sessionState.BuffSelectingPlayerCount--;
                         state.EntityManager.SetComponentData(sessionEntity, sessionState);
-                        Debug.Log($"[BuffApply] 버프 선택 완료! 남은 선택 중 플레이어: {sessionState.BuffSelectingPlayerCount}");
 
                         // 모든 플레이어가 선택 완료했으면 게임 재개 RPC 전송
                         if (sessionState.BuffSelectingPlayerCount == 0)
                         {
-                            Debug.Log("[BuffApply] 모든 버프 선택 완료 - 게임 재개!");
                             foreach (var connectionEntity in inGameConnections)
                             {
                                 var pauseRpcEntity = ecb.CreateEntity();
