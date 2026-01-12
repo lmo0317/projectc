@@ -96,9 +96,33 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8539677486239836788}
     m_Modifications:
+    - target: {fileID: 4530003305994672282, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 95fa782399640d746a200424d788459b, type: 2}
     - target: {fileID: 4530003306004163418, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
       propertyPath: m_Name
       value: BeholderPBRDefault
+      objectReference: {fileID: 0}
+    - target: {fileID: 4530003306004526968, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4530003306004526968, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4530003306004526968, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4530003306004526968, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4530003306004526968, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4530003306004526970, guid: 0959f83c88707624b96b8e4fcae1563c, type: 3}
       propertyPath: m_LocalPosition.x

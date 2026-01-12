@@ -96,7 +96,7 @@ public partial struct EnemyChaseJob : IJobEntity
     public float DeltaTime;
     [ReadOnly] public NativeArray<float3> AllEnemyPositions;
 
-    void Execute(ref LocalTransform transform, in EnemySpeed speed)
+    void Execute(ref LocalTransform transform, in EnemySpeed speed, ref EnemyMovementState movementState)
     {
         float3 currentPosition = transform.Position;
 
@@ -114,6 +114,34 @@ public partial struct EnemyChaseJob : IJobEntity
             }
         }
 
+        // 플레이어와의 공격 범위 (이 범위 안에 들어오면 이동 중지)
+        float attackRange = 1.5f;
+        float attackRangeSq = attackRange * attackRange;
+
+        // 플레이어와 충분히 가까우면 이동하지 않고 제자리 유지
+        if (closestDistSq <= attackRangeSq)
+        {
+            // 플레이어를 바라보는 방향만 유지 (회전만 수행)
+            float3 lookDirection = targetPlayerPosition - currentPosition;
+            lookDirection.y = 0;
+
+            if (math.lengthsq(lookDirection) > 0.01f)
+            {
+                float3 normalizedLookDir = math.normalize(lookDirection);
+                quaternion targetRotation = quaternion.LookRotationSafe(normalizedLookDir, math.up());
+
+                // 부드러운 회전
+                transform.Rotation = math.slerp(transform.Rotation, targetRotation, 5.0f * DeltaTime);
+
+                // 이동 상태 업데이트 (방향 저장)
+                movementState.PreviousDirection = normalizedLookDir;
+                movementState.PreviousTargetRotation = targetRotation;
+                movementState.IsInitialized = true;
+            }
+
+            return; // 이동하지 않고 종료
+        }
+
         // 2. 가장 가까운 플레이어를 향하는 방향 계산 (정규화)
         float3 chaseDirection = targetPlayerPosition - currentPosition;
         chaseDirection.y = 0;
@@ -126,7 +154,7 @@ public partial struct EnemyChaseJob : IJobEntity
         // 3. 다른 Enemy들로부터 떨어지는 방향 계산 (Separation)
         // 최적화: 모든 Enemy를 체크하지 않고 샘플링 (최대 20개만 체크)
         float3 separationDirection = float3.zero;
-        float separationRadius = 5.0f; // 충돌 회피 반경 증가 (Enemy 간 최소 거리)
+        float separationRadius = 3.0f; // 충돌 회피 반경 (Enemy 간 최소 거리) - 5.0에서 3.0으로 감소
         float separationRadiusSq = separationRadius * separationRadius; // 제곱 거리로 미리 계산
         int nearbyCount = 0;
 
@@ -153,9 +181,9 @@ public partial struct EnemyChaseJob : IJobEntity
                 float3 awayDirection = currentPosition - otherPosition;
                 awayDirection.y = 0;
 
-                // 거리가 가까울수록 강한 분리 힘 (제곱으로 증가)
+                // 거리가 가까울수록 강한 분리 힘 (선형으로 변경 - 더 부드러운 분리)
                 float strength = 1.0f - (distance / separationRadius);
-                strength = strength * strength; // 가까울수록 훨씬 강한 힘
+                // 제곱 제거: 급격한 힘 변화 방지
 
                 if (math.lengthsq(awayDirection) > 0.01f)
                 {
@@ -172,21 +200,62 @@ public partial struct EnemyChaseJob : IJobEntity
         }
 
         // 4. 최종 이동 방향 = 추적 방향 + 분리 방향 (둘 다 정규화된 상태)
-        // separationDirection에 더 높은 가중치를 줘서 충돌 회피 우선
-        float3 finalDirection = normalizedChaseDirection + separationDirection * 5.0f;
-        finalDirection.y = 0;
+        // 분리 가중치 감소: 5.0 → 1.5 (추적 방향 우선, 부드러운 회피)
+        float3 rawFinalDirection = normalizedChaseDirection + separationDirection * 1.5f;
+        rawFinalDirection.y = 0;
 
-        float distanceSq = math.lengthsq(finalDirection);
+        float distanceSq = math.lengthsq(rawFinalDirection);
 
         if (distanceSq > 0.01f)
         {
-            float3 normalizedDirection = math.normalize(finalDirection);
-            float3 movement = normalizedDirection * speed.Value * DeltaTime;
+            float3 normalizedRawDirection = math.normalize(rawFinalDirection);
+
+            // 5. 방향 스무딩 - 이전 방향과 보간하여 급격한 변화 방지
+            float3 smoothedDirection;
+            if (movementState.IsInitialized)
+            {
+                // 방향 보간 (lerp factor 0.1 = 매우 부드러운 전환)
+                // 값이 작을수록 더 부드럽게 전환됨
+                float directionSmoothFactor = 3.0f * DeltaTime; // 프레임 독립적 스무딩
+                smoothedDirection = math.lerp(movementState.PreviousDirection, normalizedRawDirection, directionSmoothFactor);
+
+                // 보간 후 재정규화 (길이가 약간 변할 수 있음)
+                if (math.lengthsq(smoothedDirection) > 0.01f)
+                {
+                    smoothedDirection = math.normalize(smoothedDirection);
+                }
+                else
+                {
+                    smoothedDirection = normalizedRawDirection;
+                }
+            }
+            else
+            {
+                // 첫 프레임: 초기화
+                smoothedDirection = normalizedRawDirection;
+                movementState.IsInitialized = true;
+            }
+
+            // 스무딩된 방향 저장
+            movementState.PreviousDirection = smoothedDirection;
+
+            // 6. 스무딩된 방향으로 이동
+            float3 movement = smoothedDirection * speed.Value * DeltaTime;
             transform.Position += movement;
 
-            // 이동 방향으로 회전
-            quaternion targetRotation = quaternion.LookRotationSafe(normalizedDirection, math.up());
-            transform.Rotation = math.slerp(transform.Rotation, targetRotation, 10f * DeltaTime);
+            // 7. 회전도 스무딩 - 목표 회전을 저장하고 매우 부드럽게 보간
+            quaternion targetRotation = quaternion.LookRotationSafe(smoothedDirection, math.up());
+
+            // 회전 스무딩 (이전 목표 회전과 현재 목표 회전 사이를 보간)
+            if (movementState.IsInitialized && !movementState.PreviousTargetRotation.Equals(quaternion.identity))
+            {
+                // 목표 회전 자체를 스무딩
+                targetRotation = math.slerp(movementState.PreviousTargetRotation, targetRotation, 3.0f * DeltaTime);
+            }
+            movementState.PreviousTargetRotation = targetRotation;
+
+            // 현재 회전에서 스무딩된 목표 회전으로 부드럽게 전환
+            transform.Rotation = math.slerp(transform.Rotation, targetRotation, 3.0f * DeltaTime);
         }
     }
 }

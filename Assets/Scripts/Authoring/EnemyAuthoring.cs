@@ -53,6 +53,14 @@ public class EnemyAuthoring : MonoBehaviour
 
             // PhysicsMass 추가 (Kinematic Body 설정)
             AddComponent(entity, PhysicsMass.CreateKinematic(MassProperties.UnitSphere));
+
+            // EnemyMovementState 추가 (방향 스무딩용)
+            AddComponent(entity, new EnemyMovementState
+            {
+                PreviousDirection = float3.zero,
+                PreviousTargetRotation = quaternion.identity,
+                IsInitialized = false
+            });
         }
     }
 }
