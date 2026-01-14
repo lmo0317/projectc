@@ -289,3 +289,96 @@ NetDebug.SuppressApplicationRunInBackgroundWarning = true;  // 인스턴스 프�
 - ✅ 사용자 요구사항을 완전히 충족
 
 **원칙: 빠르게 여러 번 실패하는 것보다, 느리더라도 한 번에 정확하게 성공하는 것이 낫습니다.**
+
+### 6. ⚠️ "Stream closed" 오류 방지 (중요!)
+
+대용량 파일 작업 시 Edit 도구에서 "Stream closed" 오류가 발생할 수 있습니다. 다음 규칙을 따르세요:
+
+#### 6.1 파일 작업 전략
+
+**문제 상황:**
+- 대용량 파일 (500+ 라인)을 한 번에 Edit하려 하면 스트림이 닫힘
+- 여러 번의 Edit 시도가 연속으로 실패할 수 있음
+
+**해결 방법:**
+
+1. **대용량 추가 내용은 별도 파일로 생성 후 병합**
+   ```
+   ❌ 나쁨: 718라인 파일에 500라인 추가 → Edit 실패
+   ✅ 좋음: 새로운 내용을 임시 파일로 생성 → Read 후 Write로 전체 교체
+   ```
+
+2. **파일이 너무 크면 섹션별로 분리**
+   ```
+   knowledge_subscene.md (700+ 라인)
+   ├── SubScene 기초 (기존 파일)
+   └── Blob 에셋 (새로운 파일: knowledge_blob_asset.md)
+   ```
+
+3. **Edit 실패 시 Write로 전환**
+   ```
+   시도 1: Edit 도구 (실패하면)
+   시도 2: Read 전체 → Write로 전체 교체
+   ```
+
+#### 6.2 구체적인 작업 절차
+
+**대용량 파일 수정 시:**
+
+```bash
+# 단계 1: 기존 파일 읽기
+Read(file_path)
+
+# 단계 2: 새로운 내용을 임시 파일에 생성
+Write(file_path_temp, new_content)
+
+# 단계 3: 두 내용을 합쳐서 전체를 다시 쓰기
+# (또는 Read + Write로 전체 교체)
+```
+
+**파일 분리 전략:**
+
+```
+Document/knowledge/
+├── knowledge_subscene.md      (SubScene 전용)
+├── knowledge_blob_asset.md    (Blob 에셋 전용) ← 새로 생성
+└── knowledge_ecs_overview.md  (ECS 개요)
+```
+
+#### 6.3 검증 체크리스트
+
+파일 작업 전 반드시 확인:
+
+- [ ] 파일 크기가 500 라인 이상인가?
+  - YES → Write로 전체 교체 또는 파일 분리 고려
+  - NO → Edit 도구 사용 가능
+
+- [ ] 추가하려는 내용이 200 라인 이상인가?
+  - YES → 별도 파일로 분리 또는 Write 사용
+  - NO → Edit 도구로 시도
+
+- [ ] Edit가 2회 연속 실패했는가?
+  - YES → 즉시 Write로 전환 (재시도 ❌)
+
+#### 6.4 실제 사례 분석
+
+**Blob 에셋 추가 작업 시:**
+```
+시도 1: Edit로 knowledge_subscene.md (718라인)에 Blob 내용 (500라인) 추가
+결과: Stream closed 오류
+
+시도 2: Edit 재시도
+결과: 다시 Stream closed 오류
+
+시도 3: (올바른 접근)
+- knowledge_blob_asset.md를 별도로 생성
+- knowledge_subscene.md에서는 Blob 관련 섹션만 간단히 추가
+- 두 파일 간 링크로 연결
+```
+
+**핵심 원칙:**
+```
+파일 크기 > 500 라인 → Edit ❌, Write ✅
+추가 내용 > 200 라인 → 파일 분리 고려
+2회 연속 실패 → 즉시 전략 변경
+```

@@ -17,6 +17,8 @@
 
 **SubScene**은 Unity DOTS (Data-Oriented Technology Stack)에서 **GameObject를 Entity로 자동 변환**하기 위해 사용하는 특수한 Scene 컴포넌트입니다.
 
+> **📖 관련 문서**: 대용량 불변 데이터(메시, 테이블, 스탯 등)를 관리하는 방법은 [Blob Asset 완전 가이드](./knowledge_blob_asset.md)를 참조하세요. SubScene과 Blob Asset을 함께 사용하면 메모리 효율을 극대화할 수 있습니다.
+
 ### 핵심 개념
 
 ```
@@ -709,6 +711,7 @@ Entity가 필요한가?
 - [Unity Entities Package 문서](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual)
 - [Unity Scenes Package 문서](https://docs.unity3d.com/Packages/com.unity.scenes@latest)
 - [DOTS Samples](https://github.com/Unity-Technologies/EntityComponentSystemSamples)
+- **Blob Asset 가이드**: [Blob Asset 완전 가이드](./knowledge_blob_asset.md) (SubScene과 함께 사용되는 대용량 데이터 관리)
 
 ---
 
