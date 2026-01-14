@@ -44,39 +44,315 @@
 
 ## SubScene 작동 원리
 
-### 1. 빌드 타임 (Baking)
+**중요:** SubScene은 **빌드 타임과 런타임 모두 수행**하는 프로세스입니다. 두 단계가 연속적으로 작동합니다.
 
 ```
-Unity Editor (Authoring)
-         ↓
-    GameObject 작업
-    (Prefab, Component)
-         ↓
-    ┌─────────────────────────┐
-    │   SubScene Baking       │
-    │  (IEntityData + Baker)  │
-    └─────────────────────────┘
-         ↓
-    Entity 변환
-    (Binary Entity Header)
-         ↓
-    .entities 파일 저장
+┌─────────────────────────────────────────────────────────────┐
+│                    SubScene 작동 원리                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1️⃣ 빌드 타임 (Editor)           2️⃣ 런타임 (게임 실행)      │
+│  ──────────────────            ────────────────────         │
+│  GameObject 작업                .entities 파일 로드          │
+│       ↓                              ↓                       │
+│  Baker 실행                      Entity 생성                 │
+│       ↓                              ↓                       │
+│  Entity 변환                      ECS World에 추가            │
+│       ↓                              ↓                       │
+│  .entities 저장                   System이 실행               │
+│  (디스크에 보관)                  (게임 플레이)               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2. 런타임 (Loading)
+### 1. 빌드 타임 (Baking) - **데이터 변환 단계**
+
+**실행 시점:**
+- Unity Editor에서 SubScene 저장 시 (Ctrl+S)
+- Play 버튼 클릭 시
+- Asset Import 시
+- Build 실행 시
+
+**생성되는 파일:**
 
 ```
-Game Start
-    ↓
-SubScene 로드 요청
-    ↓
-Entity Scene 생성
-    (기존 GameObject 없음!)
-    ↓
-ECS World에 Entity 추가
-    ↓
-ISystem이 실행되며 처리
+📁 Assets/Scenes/GameSceneSpace/
+├── GameSceneSpaceSubscene.unity          (Authoring Scene - GameObject)
+│   ├── Monster_A (GameObject)
+│   ├── Monster_B (GameObject)
+│   └── Monster_C (GameObject)
+│
+└── GameSceneSpaceSubscene.entities       ← 새로 생성됨! (Binary Entity Header)
+    (Entity 데이터만 포함된 바이너리 파일)
 ```
+
+**.entities 파일 구조:**
+
+```csharp
+// 내부적으로 이런 데이터가 저장됨 (개념적 표현)
+[Entity Header]
+{
+    EntityCount: 3
+    Entities:
+    [
+        {
+            EntityID: 1000
+            Components:
+            [
+                { Type: LocalTransform, Data: { Position: (0,0,0), Rotation: (0,0,0,1), Scale: 1 } }
+                { Type: MonsterComponent, Data: { Health: 100, MoveSpeed: 5f } }
+            ]
+        },
+        {
+            EntityID: 1001
+            Components:
+            [
+                { Type: LocalTransform, Data: { Position: (5,0,0), ... } }
+                { Type: MonsterComponent, Data: { Health: 100, MoveSpeed: 5f } }
+            ]
+        },
+        {
+            EntityID: 1002
+            Components:
+            [
+                { Type: LocalTransform, Data: { Position: (10,0,0), ... } }
+                { Type: MonsterComponent, Data: { Health: 100, MoveSpeed: 5f } }
+            ]
+        }
+    ]
+}
+```
+
+**빌드 프로세스 상세:**
+
+```
+1. Unity Editor가 SubScene 스캔
+   ↓
+2. 각 GameObject의 Authoring Component 발견
+   - MonsterAuthoring (MonoBehaviour)
+   - ItemAuthoring (MonoBehaviour)
+   ↓
+3. Baker.Bake() 메서드 호출
+   - GetEntity()로 Entity 식별자 생성
+   - AddComponent()로 컴포넌트 데이터 추가
+   ↓
+4. Entity Serialization
+   - 모든 Entity와 Component를 바이너리로 변환
+   - .entities 파일에 기록
+   ↓
+5. 완료: .entities 파일이 디스크에 저장됨
+```
+
+**실제 파일 예시:**
+
+```
+📦 GameSceneSpaceSubscene.entities (실제 바이너리 파일)
+크기: 12.5 KB
+형식: Unity Entity Binary Format
+내용: Entity metadata, Component data, Scene references
+```
+
+---
+
+### 2. 런타임 (Loading) - **데이터 실행 단계**
+
+**실행 시점:**
+- 게임이 시작될 때 (MainScene 로드)
+- SubScene 컴포넌트가 발견될 때
+- Scene Streaming으로 SubScene을 불러올 때
+
+**로딩 프로세스 상세:**
+
+```
+1. MainScene.unity 로드
+   ↓
+2. SubSceneAuthoring Component 발견
+   - "Auto Load Scene"이 체크되어 있으면 자동 로드
+   ↓
+3. .entities 파일 스캔
+   - 디스크에서 GameSceneSpaceSubscene.entities 읽기
+   ↓
+4. Entity Deserialization
+   - 바이너리 데이터를 메모리의 Entity로 변환
+   - 각 Entity의 Component 복원
+   ↓
+5. ECS World에 Entity 추가
+   - DefaultWorld 또는 지정된 World에 삽입
+   ↓
+6. System 실행 시작
+   - MonsterSystem.OnUpdate()가 Entity를 찾아 처리
+```
+
+**메모리 상태 변화:**
+
+```
+빌드 타임 (Editor):
+┌─────────────────────────────────────┐
+│ Unity Editor 메모리                  │
+│ ├── GameObject_A (MonsterAuthoring)  │
+│ ├── GameObject_B (MonsterAuthoring)  │
+│ └── GameObject_C (MonsterAuthoring)  │
+└─────────────────────────────────────┘
+              ↓ Baking
+              ↓
+디스크 저장:
+┌─────────────────────────────────────┐
+│ GameSceneSpaceSubscene.entities      │
+│ (Binary Entity Data)                 │
+└─────────────────────────────────────┘
+              ↓ 게임 시작
+              ↓
+런타임 (Game):
+┌─────────────────────────────────────┐
+│ ECS World 메모리                     │
+│ ├── Entity_1000                      │
+│ │   ├── LocalTransform               │
+│ │   └── MonsterComponent             │
+│ ├── Entity_1001                      │
+│ │   ├── LocalTransform               │
+│ │   └── MonsterComponent             │
+│ └── Entity_1002                      │
+│     ├── LocalTransform               │
+│     └── MonsterComponent             │
+└─────────────────────────────────────┘
+```
+
+**런타임 코드 동작 예시:**
+
+```csharp
+// 1. 게임 시작 - MainScene.unity 로드
+// Unity가 자동으로 SubScene을 감지
+
+// 2. SubScene 로드 요청
+SceneSystem.LoadScene(GetEntityQuery(typeof(SubSceneComponent)));
+
+// 3. .entities 파일에서 Entity 생성
+// 내부적으로 Unity가 다음 작업 수행:
+/*
+- GameSceneSpaceSubscene.entities 파일 열기
+- 바이너리 데이터 읽기
+- Entity_1000, 1001, 1002 생성
+- LocalTransform, MonsterComponent 추가
+- DefaultWorld.EntityManager에 등록
+*/
+
+// 4. System이 Entity를 처리
+public partial struct MonsterSystem : ISystem
+{
+    public void OnUpdate(ref SystemState state)
+    {
+        // .entities에서 로드된 Entity들이 자동으로 여기서 처리됨!
+        foreach (var (transform, monster) in
+                 SystemAPI.Query<RefRW<LocalTransform>, RefRW<MonsterComponent>>())
+        {
+            // 몬스터 이동 로직
+            transform.ValueRW.Position += new float3(0, 0, 1) * monster.ValueRW.MoveSpeed * SystemAPI.Time.DeltaTime;
+        }
+    }
+}
+```
+
+---
+
+### 3. 빌드 타임과 런타임의 상호작용
+
+**비유로 이해하기:**
+
+```
+🍳 요리 레시피 비유
+
+1️⃣ 빌드 타임 = 식당 주방 (준비 단계)
+   신선한 재료(GameObject) → 손질 & 레시피 적용(Baker)
+   → 냉동 보관(.entities 파일)
+
+2️⃣ 런타임 = 서빙 시간 (실행 단계)
+   냉동 보관된 재료(.entities) → 꺼내서 조리(Entity 로드)
+   → 접시에 서빙(ECS World)
+```
+
+**실제 파일 사용 예시:**
+
+```csharp
+// ============================================
+// 빌드 타임에 생성되는 파일
+// ============================================
+📁 Assets/Scenes/GameSceneSpace/
+├── GameSceneSpaceSubscene.unity        ← Authoring용 (Editor)
+│   (GameObject 작업용)
+│
+└── GameSceneSpaceSubscene.entities    ← Runtime용 (Binary)
+    (Entity 데이터)
+
+// ============================================
+// 런타임에 이 파일이 어떻게 사용되는가
+// ============================================
+
+// 단계 1: Editor에서 작업
+// 1. GameSceneSpaceSubscene.unity 열기
+// 2. GameObject 배치 + MonsterAuthoring 추가
+// 3. 저장 (Ctrl+S)
+// → 자동으로 GameSceneSpaceSubscene.entities 생성됨!
+
+// 단계 2: 게임 빌드
+// Build Settings → Build
+// → .entities 파일이 게임 데이터에 포함됨
+
+// 단계 3: 런타임 로딩
+// 게임 실행
+// → MainScene.unity 로드
+// → SubScene 컴포넌트가 .entities 파일을 찾음
+// → Entity를 메모리에 생성
+// → System이 실행됨
+```
+
+---
+
+### 4. 실제 프로젝트에서의 작동 순서
+
+**개발자 작업 흐름:**
+
+```
+Day 1: SubScene 생성
+1. Hierarchy → 우클릭 → "Sub Scene (DOTS)"
+2. 이름: "GameSceneSpaceSubscene"
+3. 더블클릭하여 SubScene 열기
+4. GameObject 배치 및 작업
+   - Monster_A 생성
+   - MonsterAuthoring 스크립트 부착
+   - Health: 100, MoveSpeed: 5 설정
+5. 저장 (Ctrl+S)
+   → Unity가 자동으로 Baking 실행
+   → GameSceneSpaceSubscene.entities 생성됨!
+
+Day 2: Play 버튼으로 테스트
+1. MainScene.unity 열기
+2. Play 버튼 클릭 (▶)
+   → SubScene 로딩 시작
+   → .entities 파일에서 Entity 생성
+   → MonsterSystem이 실행되며 몬스터들이 움직임!
+
+Day 3: 빌드 및 배포
+1. File → Build Settings → Build
+2. 생성된 게임 실행
+   → .entities 파일이 번들로 포함됨
+   → 플레이어의 컴퓨터에서 Entity 로드
+   → 게임 플레이!
+```
+
+---
+
+### 5. 중요 개념 정리
+
+| 단계 | 시점 | 파일 | 메모리 상태 | 작업 |
+|------|------|------|-----------|------|
+| **빌드 타임** | Editor 작업 중 | `.unity` 파일 존재 | GameObject 존재 | Baker가 Entity로 변환 |
+| **Baking 완료** | 저장/빌드 시 | `.entities` 파일 생성 | Entity 데이터가 파일로 저장 | 디스크에 보관 |
+| **런타임** | 게임 실행 중 | `.entities` 파일 로드 | Entity만 존재 | GameObject 없음! |
+
+**핵심 포인트:**
+- GameObject는 **Editor에서만 존재** (개발자 편의성)
+- `.entities` 파일은 **중간 결과물** (디스크에 저장)
+- 런타임에는 **Entity만 로드** (고성능 실행)
 
 ---
 
