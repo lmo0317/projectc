@@ -279,6 +279,49 @@ NetDebug.SuppressApplicationRunInBackgroundWarning = true;  // 인스턴스 프�
 - [ ] 컴파일 에러 가능성은 없는가?
 - [ ] 런타임 에러 가능성은 없는가?
 - [ ] 이전에 비슷한 에러를 낸 적이 있는가? (패턴 학습)
+- [ ] **모든 네임스페이스가 올바르게 import 되었는가?**
+- [ ] **타입 충돌(ambiguous reference)은 없는가?**
+
+#### 4.1 Unity ECS 코드 수정 후 추가 검증 (필수!)
+
+Unity DOTS 프로젝트에서 코드 수정 시 다음을 **반드시** 확인:
+
+1. **네임스페이스 충돌 확인**
+   ```csharp
+   // ❌ 잘못된 예: 이름 충돌
+   using Unity.Physics;
+   using UnityEngine;
+
+   var collider = new SphereCollider();  // 어느 쪽인가?
+
+   // ✅ 올바른 예: 별칭 사용
+   using Physics = Unity.Physics;
+   using UnityEngine;
+
+   var collider = new Physics.SphereCollider();  // 명확함!
+   ```
+
+2. **Physics 관련 타입**
+   - `Unity.Physics.SphereCollider` vs `UnityEngine.SphereCollider`
+   - `Unity.Physics.BoxCollider` vs `UnityEngine.BoxCollider`
+   - `Unity.Physics.CapsuleCollider` vs `UnityEngine.CapsuleCollider`
+   - `Unity.Physics.Material` vs `UnityEngine.Material`
+
+3. **일반적인 컴파일 에러 패턴**
+   - `CS0104`: 모호한 참조 (ambiguous reference) → 네임스페이스 별칭 사용
+   - `CS1061`: 멤버가 없음 → 잘못된 타입 사용 또는 API 버전 차이
+   - `CS0117`: 정적 타입에 인스턴스 멤버 접근 → static/instance 구분
+   - `CS1501`: 메서드 오버로드 없음 → API 시그니처 확인
+
+4. **수정 후 최종 확인 절차**
+   ```
+   1. 모든 Edit 도구 호출 완료
+   2. 수정된 파일의 전체 컨텍스트 확인
+   3. 네임스페이스 using 문 검토
+   4. 타입 충돌 가능성 확인
+   5. API 사용법 검증
+   6. → 그 후에 "완료했습니다" 메시지 전송
+   ```
 
 ### 5. "완료" 선언 기준
 다음 조건을 **모두** 만족할 때만 "완료했습니다"라고 말할 것:
