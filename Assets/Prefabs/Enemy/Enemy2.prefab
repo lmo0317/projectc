@@ -50,7 +50,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAuthoring
   Health: 100
   Speed: 2
-  ColliderRadius: 0.5
+  UseCustomCollider: 1
 --- !u!114 &5230384193926929299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108,7 +108,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Radius: 0.7
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &3046584703537309936
 PrefabInstance:
